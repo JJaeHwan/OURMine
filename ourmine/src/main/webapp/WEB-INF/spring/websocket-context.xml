@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-5.7.xsd
+		http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+
+	<bean id="sampleEchoWebSocketHandler" class="kr.or.ddit.websocket.handler.SampleEchoWebSocketHandler" />
+	<bean id="alarmWebSocketHandler" class="kr.or.ddit.alarm.handler.AlarmWebSocketHandler" />
+
+<!-- 	<bean id="pushMessageWebSocketHandler" class="kr.or.ddit.websocket.handler.PushMessageWebSocketHandler"></bean> -->
+	<websocket:handlers>
+		<websocket:mapping handler="sampleEchoWebSocketHandler" path="/ws/echo"/>
+		<websocket:mapping handler="alarmWebSocketHandler" path="/aws/echo"/>
+<!-- 		<websocket:mapping handler="pushMessageWebSocketHandler" path="/ws/push"/> -->
+	</websocket:handlers>
+
+	<websocket:message-broker application-destination-prefix="/app" user-destination-prefix="/user">
+		<websocket:stomp-endpoint path="/ws/**" allowed-origins="*" />
+		<websocket:stomp-endpoint path="/aws/**" allowed-origins="*" />
+		<websocket:simple-broker prefix="/topic,/queue,/chatting"/>
+	</websocket:message-broker>
+
+	<security:websocket-message-broker same-origin-disabled="true">
+		<security:intercept-message type="CONNECT" access="permitAll"/>
+	</security:websocket-message-broker>
+</beans>

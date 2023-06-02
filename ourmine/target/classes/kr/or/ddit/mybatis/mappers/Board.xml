@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.board.dao.BoardDAO">
+
+<select id="boardSelectCount"  resultType="int">
+   SELECT COUNT(*)
+   FROM BOARD
+</select>
+
+<select id="boardList" resultType="kr.or.ddit.board.vo.BoardVO" parameterType="int">
+	SELECT *
+	FROM BOARD
+	where REMOVE_WHETHER = 'N'
+			and BOARD_CONOTICE = 'N'
+			and BOARD_TYPE_ID = #{boardTypeId}
+
+</select>
+<select id="boardCoNoticList" resultType="kr.or.ddit.board.vo.BoardVO">
+	SELECT *
+	FROM BOARD
+	where REMOVE_WHETHER = 'N'
+			and BOARD_CONOTICE = 'Y'
+			and COMPANY_ID = #{companyId}
+
+</select>
+<select id="boardSelect" parameterType="int">
+	SELECT
+	    board_id,
+	    board_type_id,
+	    board_title,
+	    board_writer,
+	    board_content,
+	    board_write_date,
+	    board_count
+	FROM
+	    board
+	WHERE board_id = #{boardId}
+	<!-- 프로젝트 id, 역할 -->
+</select>
+<select id="selectProjectRole" parameterType="kr.or.ddit.board.vo.BoardVO">
+	SELECT
+		PROJECT_ROLE_ID
+	FROM
+	    PROJECT_ATTEND
+	WHERE PROJECT_ID = #{projectId} and MEMBER_ID = #{memberId}
+</select>
+<insert id="insertBoard" parameterType="kr.or.ddit.board.vo.BoardVO">
+<selectKey order="AFTER" resultType="int" keyProperty="boardId">
+	SELECT NVL(MAX(BOARD_ID),0)
+	FROM BOARD
+</selectKey>
+	INSERT INTO BOARD
+		(BOARD_TYPE_ID,
+			PROJECT_ID,
+			MEMBER_ID,
+			PROJECT_ROLE_ID,
+			COMPANY_ID,
+			BOARD_TITLE,
+			BOARD_WRITER,
+			BOARD_CONTENT,
+			BOARD_CONOTICE)
+	VALUES
+		(#{boardTypeId},
+		 #{projectId},
+		 #{memberId},
+		 #{projectRoleId},
+		 #{companyId},
+		 #{boardTitle},
+		 #{boardWriter},
+		 #{boardContent},
+		 #{boardConotice})
+</insert>
+
+<delete id="deleteBoard" parameterType="int">
+	   UPDATE board
+            SET
+                REMOVE_WHETHER = 'Y'
+        WHERE
+            BOARD_ID = #{boardId}
+
+</delete>
+<update id="updateBoard" parameterType="kr.or.ddit.board.vo.BoardVO">
+		UPDATE board
+            SET
+				BOARD_TITLE= #{boardTitle},
+				BOARD_CONTENT= #{boardContent},
+				BOARD_MODIFY_DATE = sysdate
+        WHERE
+            BOARD_ID = #{boardId}
+</update>
+<update id="boardHitUpdate" parameterType="int">
+		UPDATE board
+		SET
+			BOARD_COUNT = BOARD_COUNT + 1
+		WHERE board_id = #{boardId}
+</update>
+
+<select id="boardFileSelect" parameterType="int">
+	SELECT *
+	FROM BOARD B LEFT JOIN BOARD_FILE BF on B.BOARD_ID = BF.BOARD_ID
+	WHERE B.BOARD_ID = #{boardId}
+</select>
+
+<select id="boardMemCompanySelect" parameterType="int" resultType="int">
+	SELECT DISTINCT COMPANY_ID
+	FROM 
+		PROJECT_ATTEND
+	WHERE 
+		MEMBER_Id = #{memberId}
+</select>
+
+</mapper>

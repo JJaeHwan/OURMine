@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.dashboard.dao.DashboardDAO">
+
+<select id="dashboardList" resultType="kr.or.ddit.projectAttend.vo.ProjectAttendVO" parameterType="kr.or.ddit.projectAttend.vo.ProjectAttendVO">
+SELECT P.PROJECT_ID, P.PROJECT_NAME, P.PROJECT_CONTENT , P.PROJECT_START_DATE, P.PROJECT_END_DATE
+        ,(SELECT COUNT(MEMBER_ID) FROM PROJECT_ATTEND WHERE COMPANY_ID =#{companyId} AND PROJECT_ID = #{projectId}) MEMBERCOUNT
+        ,(SELECT MEMBER_NAME M FROM MEMBER JOIN PROJECT_ATTEND PA on MEMBER.MEMBER_ID = PA.MEMBER_ID
+                                          JOIN PROJECT_ROLE PR on PA.PROJECT_ROLE_ID = PR.PROJECT_ROLE_ID
+                               WHERE PA.COMPANY_ID=#{companyId} AND PA.PROJECT_ID =#{projectId} AND PR.PROJECT_ROLE_ID = 21) MEMBER_NAME
+FROM PROJECT P
+WHERE COMPANY_ID =#{companyId} AND PROJECT_ID = #{projectId}
+
+</select>
+
+<resultMap id="projectResultMap" type="kr.or.ddit.project.vo.ProjectVO">
+	<id property="projectId" column="PROJECT_ID" />
+	  <result property="progress" column="progress"/>
+	  <result property="leftDays" column="LEFTDAYS"/>
+	  <result property="projectStatusName" column="PROJECT_STATUS_NAME"/>
+	  <result property="totalDay" column="TOTALDAY"/>
+	  
+	<collection property="projectMembers" ofType="kr.or.ddit.projectAttend.vo.ProjectAttendVO" javaType="java.util.ArrayList">
+		<id property="memberId" column="MEMBER_ID" />
+		  <result property="memberName" column="MEMBER_NAME"/>
+		  <result property="memberImageFileRoute" column="MEMBER_IMAGE_FILE_ROUTE"/>
+		  <result property="fileExtension" column="FILE_EXTENSION"/>
+		  <result property="projectRoleId" column="PROJECT_ROLE_ID"/>
+		  <result property="projectRole" column="PROJECT_ROLE"/>
+	</collection>
+</resultMap>
+
+<select id="projectData" resultMap="projectResultMap" parameterType="int">
+select M.MEMBER_NAME, M.MEMBER_IMAGE_FILE_ROUTE, M.FILE_EXTENSION, PR.PROJECT_ROLE_ID, PR.PROJECT_ROLE
+        ,CASE
+           WHEN P.PROJECT_END_DATE = P.PROJECT_START_DATE THEN 100
+           WHEN TRUNC(ROUND((TRUNC(SYSDATE) - P.PROJECT_START_DATE) / (P.PROJECT_END_DATE - P.PROJECT_START_DATE) * 100, 2)) <![CDATA[>]]> 100 THEN 100
+           ELSE TRUNC(ROUND((TRUNC(SYSDATE) - P.PROJECT_START_DATE) / (P.PROJECT_END_DATE - P.PROJECT_START_DATE) * 100, 2))
+           END AS progress
+        ,CASE
+             WHEN P.PROJECT_END_DATE = P.PROJECT_START_DATE THEN 0
+             WHEN CEIL(P.PROJECT_END_DATE - SYSDATE) <![CDATA[<]]> 0 THEN 0
+             ELSE CEIL(P.PROJECT_END_DATE - SYSDATE)
+         END AS LEFTDAYS
+        , (select PROJECT_STATUS_NAME from PROJECT_STATUS PS where P.PROJECT_STATUS_ID = PS.PROJECT_STATUS_ID)  AS PROJECT_STATUS_NAME
+        , (P.PROJECT_END_DATE - P.PROJECT_START_DATE) AS TOTALDAY
+from PROJECT P
+    JOIN PROJECT_ATTEND PA on P.PROJECT_ID = PA.PROJECT_ID
+    JOIN PROJECT_ROLE  PR ON PA.PROJECT_ROLE_ID = PR.PROJECT_ROLE_ID
+    JOIN MEMBER M on PA.MEMBER_ID = M.MEMBER_ID
+where P.PROJECT_ID = #{projectId}
+ORDER BY PR.PROJECT_ROLE_ID
+</select>
+<resultMap type="kr.or.ddit.projectissue.vo.ProjectIssueVO" id="issueResultMap">
+	<id property="projectIssueId" column="PROJECT_ISSUE_ID" />
+		<result property="totalIssueCount" column="TOTALISSUECOUNT"/>
+		<result property="completeIssueCount" column="COMPLETEISSUECOUNT"/>
+		<result property="completeIssuePercentage" column="COMPLETEISSUEPERCENTAGE"/>
+		<result property="highStatusCount" column="HIGHSTATUSCOUNT"/>
+		<result property="midStatusCount" column="MIDSTATUSCOUNT"/>
+		<result property="lowStatusCount" column="LOWSTATUSCOUNT"/>
+		
+	<collection property="trackerList" ofType="kr.or.ddit.projectissue.vo.TrackerVO" javaType="java.util.ArrayList">
+		<id property="trackerId" column="TRACKER_ID" />
+			<result property="trackerName" column="TRACKER_NAME"/>
+			<result property="issueTitle" column="ISSUE_TITLE"/>
+			<result property="timeAgo" column="TIMEAGO"/>
+	</collection>
+</resultMap>
+
+<select id="issueData" resultMap="issueResultMap" parameterType="int">
+SELECT *
+FROM (SELECT PI.PROJECT_ISSUE_ID, PI.ISSUE_TITLE, PI.PROJECT_STATUS_ID, PI.TRACKER_ID, T.TRACKER_NAME
+           , (SELECT COUNT(PROJECT_ISSUE_ID) FROM PROJECT_ISSUE WHERE PROJECT_ID = #{projectId}) TOTALISSUECOUNT
+           , (SELECT COUNT(PROJECT_ISSUE_ID) FROM PROJECT_ISSUE WHERE PROJECT_ID = #{projectId} AND PROJECT_STATUS_ID = 2) COMPLETEISSUECOUNT
+           , TRUNC((SELECT COUNT(PROJECT_ISSUE_ID) FROM PROJECT_ISSUE WHERE PROJECT_ID = #{projectId} AND PROJECT_STATUS_ID = 2) *  100 /
+                   (SELECT COUNT(PROJECT_ISSUE_ID) FROM PROJECT_ISSUE WHERE PROJECT_ID = #{projectId}),0) AS COMPLETEISSUEPERCENTAGE
+           , (SELECT COUNT(PROJECT_ISSUE_ID) FROM PROJECT_ISSUE WHERE PROJECT_ID = #{projectId} AND PROJECT_ISSUE_CODE_ID = 1) HIGHSTATUSCOUNT
+           , (SELECT COUNT(PROJECT_ISSUE_ID) FROM PROJECT_ISSUE WHERE PROJECT_ID = #{projectId} AND PROJECT_ISSUE_CODE_ID = 3) MIDSTATUSCOUNT
+           , (SELECT COUNT(PROJECT_ISSUE_ID) FROM PROJECT_ISSUE WHERE PROJECT_ID = #{projectId} AND PROJECT_ISSUE_CODE_ID = 4) LOWSTATUSCOUNT
+           , CASE
+                 WHEN TO_CHAR(SYSDATE - ISSUE_EVENT_DATE) * 24 * 60 <![CDATA[<]]> 30 THEN
+                     TO_CHAR(TRUNC((SYSDATE - ISSUE_EVENT_DATE) * 24 * 60))
+                 ELSE
+                         TO_CHAR(FLOOR((SYSDATE - ISSUE_EVENT_DATE) * 24)) || ' HOURS ' ||
+                         TO_CHAR(MOD(FLOOR((SYSDATE - PI.ISSUE_EVENT_DATE) * 24 * 60), 60)) || ' MIN '
+             END AS TIMEAGO
+      FROM PROJECT_ISSUE PI
+               JOIN PROJECT_ISSUE_CODE PIC ON PI.PROJECT_ISSUE_CODE_ID = PIC.PROJECT_ISSUE_CODE_ID
+               JOIN TRACKER T on PI.TRACKER_ID = T.TRACKER_ID
+      WHERE PROJECT_ID = #{projectId}
+      ORDER BY PI.ISSUE_EVENT_DATE DESC
+      ) WHERE ROWNUM <![CDATA[<]]>=7
+</select>
+
+<select id="workData" resultType="kr.or.ddit.projectwork.vo.ProjectWorkVO" parameterType="int">
+SELECT
+    (SELECT COUNT(PW.PROJECT_WORK_ID)  FROM PROJECT_WORK PW   WHERE PW.PROJECT_ID = #{projectId} and pw.PROJECT_WORK_REMOVE_WHETHER ='N') AS TOTAL_COUNT
+   ,TRUNC((SELECT COUNT(PROJECT_WORK_ID) FROM PROJECT_WORK WHERE PROJECT_ID = #{projectId} AND PROJECT_WORK_STATUS_ID = 4 and PROJECT_WORK_REMOVE_WHETHER ='N') * 100 / (SELECT COUNT(PROJECT_WORK_ID) FROM PROJECT_WORK WHERE PROJECT_ID = #{projectId} and PROJECT_WORK_REMOVE_WHETHER ='N'), 0) AS COMPLETE_WORK_PERCENTAGE
+   ,(SELECT COUNT(PW.PROJECT_WORK_ID)  FROM PROJECT_WORK PW   WHERE PW.PROJECT_ID = #{projectId} AND PW.PROJECT_WORK_STATUS_ID = 4 and pw.PROJECT_WORK_REMOVE_WHETHER ='N') AS COMPLETE_COUNT
+   ,(SELECT COUNT(PW.PROJECT_WORK_ID)  FROM PROJECT_WORK PW   WHERE PW.PROJECT_ID = #{projectId} AND PW.PROJECT_WORK_STATUS_ID = 5 and pw.PROJECT_WORK_REMOVE_WHETHER ='N') AS STAY_COUNT
+   ,(SELECT COUNT(PW.PROJECT_WORK_ID)  FROM PROJECT_WORK PW   WHERE PW.PROJECT_ID = #{projectId} AND PW.PROJECT_WORK_STATUS_ID = 3 and pw.PROJECT_WORK_REMOVE_WHETHER ='N') AS FEED_COUNT
+   ,(SELECT COUNT(PW.PROJECT_WORK_ID)  FROM PROJECT_WORK PW   WHERE PW.PROJECT_ID = #{projectId} AND PW.PROJECT_WORK_STATUS_ID = 2 and pw.PROJECT_WORK_REMOVE_WHETHER ='N') AS STARTED_COUNT
+   ,(SELECT COUNT(PW.PROJECT_WORK_ID)  FROM PROJECT_WORK PW   WHERE PW.PROJECT_ID = #{projectId} AND PW.PROJECT_WORK_STATUS_ID = 1 and pw.PROJECT_WORK_REMOVE_WHETHER ='N') AS REQUEST_COUNT
+FROM DUAL
+</select>
+
+<select id="workMemberData" resultType="kr.or.ddit.projectwork.vo.ProjectWorkVO" parameterType="int">
+	SELECT
+    PW.PROJECT_WORK_PIC
+    ,COUNT(*) AS WORK_COUNT
+    ,SUM(CASE WHEN PW.PROJECT_WORK_STATUS_ID = 4 THEN 1 ELSE 0 END) AS COMPLETE_WORK_COUNT
+    ,TRUNC(ROUND((SUM(CASE WHEN PW.PROJECT_WORK_STATUS_ID = 4 THEN 1 ELSE 0 END) / COUNT(*)) * 100, 2)) AS COMPLETE_PERCENTAGE
+FROM PROJECT_WORK PW
+WHERE PROJECT_ID = #{projectId} and pw.PROJECT_WORK_REMOVE_WHETHER ='N'
+GROUP BY PW.PROJECT_WORK_PIC
+</select>
+
+
+
+
+
+</mapper>

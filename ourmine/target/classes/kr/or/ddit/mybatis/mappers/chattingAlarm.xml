@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.chatting.dao.ChattingDAO">
+	<insert id="insertChattingAlarm" parameterType="kr.or.ddit.alarm.vo.AlarmVO">
+		INSERT into ALARM 
+			(CHATTING_ID, 
+			ALARM_CONTENT, 
+			ALARM_SENDER, 
+			SENDER_ID, 
+			RECEIVER_ID, 
+			ALARM_RECEIVER)
+        values 
+        	(#{chattingId}, 
+        	#{alarmContent}, 
+        	#{alarmSender}, 
+        	#{senderId}, 
+        	#{receiverId}, 
+        	#{alarmReceiver})
+	</insert>
+</mapper>

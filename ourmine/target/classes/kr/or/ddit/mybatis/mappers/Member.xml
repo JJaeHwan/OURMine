@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.member.dao.MemberDAO">
+
+	<select id="memberSelect" parameterType="string" resultType="kr.or.ddit.member.vo.MemberVO">
+	SELECT
+    M.MEMBER_ID, M.MEMBER_GRADE_ID, M.MEMBER_NAME, M.MEMBER_EMAIL, M.MEMBER_PASSWORD, M.MEMBER_TEL, M.MEMBER_SECESSION_WHETHER
+  , (SELECT MEMBER_GRADE FROM MEMBER_GRADE MG WHERE M.MEMBER_GRADE_ID = MG.MEMBER_GRADE_ID) MEMBER_GRADE
+  , C.COMPANY_ID, C.COMPANY_NAME
+  ,(S.SUBSCRIBE_END_DATE - S.SUBSCRIBE_START_DATE) SUBSCRIBE_DATE
+FROM MEMBER M
+    LEFT JOIN ASSOCIATION A on M.MEMBER_ID = A.MEMBER_ID
+   LEFT JOIN COMPANY C ON A.COMPANY_ID = C.COMPANY_ID
+    LEFT JOIN SUBSCRIBE S ON M.MEMBER_ID = S.MEMBER_ID
+WHERE M.MEMBER_EMAIL = #{memberEmail}
+and (s.SUBSCRIBE_USE = 'Y' or s.SUBSCRIBE_USE is null)
+	</select>
+
+	<select id="getAllAttendRole" resultType="kr.or.ddit.projectAttend.vo.ProjectAttendVO" 	parameterType="int">
+		SELECT C.COMPANY_NAME
+		     , pa.COMPANY_ID
+		     , pa.PROJECT_ID
+		     ,pa.MEMBER_ID
+		     ,pa.PROJECT_ROLE_ID
+		     , P.PROJECT_NAME
+		     , M.MEMBER_NAME
+		     , PR.PROJECT_ROLE
+		     , MR.MEMBER_GRADE
+		     , pr.PROJECT_ROLE as groupRole
+		     , MR.MEMBER_GRADE AS groupGrade
+		FROM PROJECT_ATTEND PA
+		         JOIN PROJECT P on PA.PROJECT_ID = P.PROJECT_ID
+		         JOIN PROJECT_ROLE PR ON PA.PROJECT_ROLE_ID = PR.PROJECT_ROLE_ID
+		         JOIN ASSOCIATION A2 on PA.MEMBER_ID = A2.MEMBER_ID and PA.COMPANY_ID =   A2.COMPANY_ID
+		         JOIN MEMBER M ON A2.MEMBER_ID = M.MEMBER_ID
+		         JOIN MEMBER_GRADE MR ON   M.MEMBER_GRADE_ID = MR.MEMBER_GRADE_ID
+		         JOIN COMPANY C ON A2.COMPANY_ID   = C.COMPANY_ID
+
+		WHERE M.MEMBER_ID = #{memberId}
+
+	</select>
+
+	<select id="memberList" resultType="kr.or.ddit.member.vo.MemberVO" parameterType="int">
+	SELECT C.COMPANY_NAME, O.DEPARTMENT_NAME ,M.MEMBER_NAME ,
+       MG.MEMBER_GRADE,M.MEMBER_IMAGE_FILE_ROUTE,M.SAVE_FILE_NAME,M.FILE_EXTENSION,M.ORIGINAL_FILE_NAME
+	FROM MEMBER_GRADE MG
+	         JOIN MEMBER M on MG.MEMBER_GRADE_ID
+	    = M.MEMBER_GRADE_ID
+	         JOIN ASSOCIATION A ON M.MEMBER_ID = A.MEMBER_ID
+	         JOIN COMPANY C ON A.COMPANY_ID = C.COMPANY_ID
+	         LEFT JOIN ORGCHART O on
+	        A.ORGCHART_ID = O.ORGCHART_ID
+	WHERE A.COMPANY_ID = #{companyId}
+	ORDER BY COMPANY_NAME
+	</select>
+	<update id="updateMemberBySubscribe" parameterType="int">
+		UPDATE MEMBER
+		   SET
+			   MEMBER_GRADE_ID = 2 WHERE MEMBER_ID = #{memberId}
+	</update>
+	<select id="memberCheckSelect" resultType="int">
+		SELECT COUNT(*) FROM MEMBER
+		 WHERE MEMBER_EMAIL = #{memberEmail}
+	</select>
+
+	<insert id="insertMember" parameterType="kr.or.ddit.member.vo.MemberVO">
+		INSERT INTO MEMBER(MEMBER_NAME, MEMBER_EMAIL,
+		MEMBER_PASSWORD,MEMBER_TEL)
+		VALUES
+		(#{memberName},#{memberEmail},#{memberPassword},#{memberTel})
+	</insert>
+
+	<update id="updateMember" parameterType="kr.or.ddit.member.vo.MemberVO">
+		UPDATE MEMBER
+		SET MEMBER_EMAIL = #{memberEmail}
+		,MEMBER_TEL =#{memberTel}
+
+		<if test="saveFileName != null">
+			 , MEMBER_IMAGE_FILE_ROUTE = #{memberImageFileRoute}
+   			, ORIGINAL_FILE_NAME = #{originalFileName}
+  			 , SAVE_FILE_NAME = #{saveFileName}
+  			, FILE_EXTENSION = #{fileExtension}
+		</if>
+		WHERE MEMBER_ID = #{memberId}
+	</update>
+
+	<select id="memberMyPageSelect" resultType="kr.or.ddit.member.vo.MemberVO" parameterType="int">
+	SELECT
+    A.MEMBER_GRADE_ID,
+    A.MEMBER_NAME,
+    A.MEMBER_EMAIL,
+    A.MEMBER_PASSWORD,
+    A.MEMBER_ID,
+    A.MEMBER_TEL,
+    B.MEMBER_GRADE,
+    C.COMPANY_NAME,
+    A.SAVE_FILE_NAME,
+    A.MEMBER_IMAGE_FILE_ROUTE,
+    A.ORIGINAL_FILE_NAME,
+    A.FILE_EXTENSION,
+    C.COMPANY_ID,
+    C.COMPANY_CEO
+FROM MEMBER A JOIN MEMBER_GRADE B
+                   ON A.MEMBER_GRADE_ID=B.MEMBER_GRADE_ID
+              LEFT JOIN  ASSOCIATION A2 on A.MEMBER_ID = A2.MEMBER_ID
+              LEFT JOIN  COMPANY C ON A2.COMPANY_ID = C.COMPANY_ID
+WHERE A.MEMBER_ID = #{memberId}
+	</select>
+
+	<select id="memberOrgLvlSelect" resultType="kr.or.ddit.member.vo.MemberVO" parameterType="kr.or.ddit.member.vo.MemberVO">
+	SELECT *
+	FROM (
+	         SELECT ORGCHART.*, LEVEL AS LVL
+	         FROM ORGCHART
+	         START WITH COMPANY_ID = #{companyId} AND SENIOR_DEPARTMENT_ID IS NULL
+	         CONNECT BY PRIOR ORGCHART_ID = SENIOR_DEPARTMENT_ID
+	     )
+	WHERE  DEPARTMENT_REMOVE_WHETHER IS NULL
+	ORDER BY LVL
+	</select>
+
+	<select id="memberTelSelect" resultType="int">
+		SELECT COUNT(*)
+		FROM MEMBER
+		WHERE MEMBER_TEL = #{memberTel}
+	</select>
+
+	<select id="memberOrgLvlListSelect"  resultType="kr.or.ddit.member.vo.MemberVO" parameterType="kr.or.ddit.member.vo.MemberVO">
+		SELECT *
+	FROM (
+	         SELECT DISTINCT  O.*, LEVEL AS LVL, M.MEMBER_NAME,C.COMPANY_NAME,MG.MEMBER_GRADE,M.MEMBER_IMAGE_FILE_ROUTE
+	         FROM ORGCHART O
+	                  LEFT JOIN ASSOCIATION A2 ON O.ORGCHART_ID = A2.ORGCHART_ID
+	                  LEFT JOIN   MEMBER M on A2.MEMBER_ID = M.MEMBER_ID
+	                  LEFT JOIN COMPANY C ON A2.COMPANY_ID = C.COMPANY_ID
+	                 LEFT JOIN MEMBER_GRADE MG on M.MEMBER_GRADE_ID = MG.MEMBER_GRADE_ID
+	         WHERE O.COMPANY_ID = #{companyId}
+	         START WITH O.ORGCHART_ID = #{orgchartId}
+	         CONNECT BY PRIOR O.ORGCHART_ID = SENIOR_DEPARTMENT_ID
+	     )
+	WHERE LVL >= 1 AND DEPARTMENT_REMOVE_WHETHER IS NULL
+	ORDER BY LVL
+	</select>
+
+	<delete id="deleteMember" parameterType="int">
+		UPDATE MEMBER
+		SET MEMBER_SECESSION_WHETHER = 'Y'
+		WHERE MEMBER_ID = #{memberId}
+	</delete>
+	
+	<select id="adminCompanyList" resultType="kr.or.ddit.company.vo.CompanyVO">
+		SELECT *
+		FROM COMPANY
+	</select>
+	
+	<select id="adminCompanyMemberList" resultType="kr.or.ddit.member.vo.MemberVO" parameterType="kr.or.ddit.member.vo.MemberVO">
+		SELECT *
+			FROM (
+		SELECT a.*, ROWNUM as rnum
+		FROM (
+			SELECT *
+			FROM MEMBER M JOIN ASSOCIATION A2 on M.MEMBER_ID = A2.MEMBER_ID
+			JOIN COMPANY C ON A2.COMPANY_ID = C.COMPANY_ID
+			 WHERE  M.MEMBER_GRADE_ID != 1
+			<if test="companyId > 0">
+				AND C.COMPANY_ID = #{companyId}
+			</if>
+			ORDER BY M.MEMBER_ID
+		) a
+	) WHERE rnum BETWEEN (#{currentPage} - 1) * #{pageSize} + 1 AND #{currentPage} * #{pageSize}
+	</select>
+	
+	<select id="adminCompanyMemberCount" resultType="int" parameterType="kr.or.ddit.member.vo.MemberVO">
+	   <choose>
+        <when test="companyId > 0">
+            SELECT COUNT(*)
+            FROM MEMBER
+            JOIN ASSOCIATION A2 on MEMBER.MEMBER_ID = A2.MEMBER_ID
+            JOIN COMPANY C ON A2.COMPANY_ID = C.COMPANY_ID
+            WHERE C.COMPANY_ID = #{companyId}
+        </when>
+        <otherwise>
+            SELECT COUNT(*)
+			FROM MEMBER
+			WHERE MEMBER_GRADE_ID != 1
+        </otherwise>
+    </choose>
+	
+	</select>
+
+
+</mapper>

@@ -1,0 +1,115 @@
+package kr.or.ddit.project.service;
+
+import java.util.List;
+
+import kr.or.ddit.alarm.dao.AlarmDAO;
+import kr.or.ddit.alarm.vo.AlarmVO;
+import kr.or.ddit.member.dao.AssociationDAO;
+import kr.or.ddit.member.dao.MemberDAO;
+import kr.or.ddit.member.vo.AssociationVO;
+import kr.or.ddit.member.vo.MemberVO;
+import kr.or.ddit.member.vo.MemberVOWrapper;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import kr.or.ddit.project.dao.ProjectDAO;
+import kr.or.ddit.project.vo.ProjectVO;
+import kr.or.ddit.projectAttend.dao.ProjectAttendDAO;
+import kr.or.ddit.projectAttend.vo.ProjectAttendVO;
+import kr.or.ddit.ui.AlarmSendUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ProjectServiceImpl implements ProjectService{
+
+	private final ProjectDAO projectDAO;
+	private final AssociationDAO associationDAO;
+	private final ProjectAttendDAO projectAttendDAO;
+	private final MemberDAO memberDAO;
+	private final AlarmDAO alarmDAO;
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<ProjectVO> projectList(Authentication user, MemberVO memberVO) {
+		MemberVOWrapper vo  = (MemberVOWrapper) user.getPrincipal();
+		AssociationVO associationVO = associationDAO.associationSelectOne(vo.getRealUser().getMemberId());
+
+		associationVO.setMemberGradeId(memberVO.getMemberGradeId());
+		associationVO.setMemberId( memberVO.getMemberId());
+
+		List<ProjectVO> project =  projectDAO.projectList(associationVO);
+
+		log.info("vo={}",memberVO.getMemberGradeId());
+		log.info("associationVO={}",associationVO);
+		log.info("project={}",project);
+		return project;
+	}
+
+	// 프로젝트멤버리스트
+	@Override
+	public List<AssociationVO> projectMemberList(int companyId) {
+		return projectDAO.projectMemberList(companyId);
+	}
+
+	// 프로젝트 상세조회
+	@Override
+	@Transactional(readOnly = true)
+	public ProjectVO projectSelect(int projectId) {
+		return projectDAO.projectSelect(projectId);
+
+	}
+
+	// 프로젝트 생성
+	@Override
+	public int insertProject(ProjectVO vo, Authentication user) {
+		MemberVOWrapper principal = (MemberVOWrapper) user.getPrincipal();
+		
+		List<ProjectAttendVO> projectMembers = vo.getProjectMembers();
+		projectDAO.insertProject(vo);
+		projectMembers.forEach(item ->{
+			item.setCompanyId(principal.getRealUser().getCompanyId());
+			item.setProjectId(vo.getProjectId());
+		});
+		projectAttendDAO.insertProjectAttendPL(projectMembers);
+		
+		List<AlarmVO> projectAlarms = vo.getProjectAlarms();
+		log.info("projectAlarms = {}",projectAlarms);
+		projectAlarms.forEach(item ->{
+			item.setProjectId(vo.getProjectId());
+			item.setAlarmSender(principal.getRealUser().getMemberName());
+			
+//			AlarmSendUtil.send("2", item.getAlarmContent(), "d");
+			AlarmSendUtil.send(null, null, null);
+		});
+		
+		
+		
+		return alarmDAO.insertAlarm(projectAlarms);
+	}
+
+	// 프로젝트 업데이트
+	@Override
+	public int updateProject(ProjectVO project) {
+		return projectDAO.updateProject(project);
+	}
+
+	@Override
+	public int deleteProject(int projectId) {
+
+		return projectDAO.deleteProject(projectId);
+	}
+
+	@Override
+	public int projectMemberCountSelect() {
+		return projectDAO.projectMemberCountSelect();
+	}
+
+
+
+
+}

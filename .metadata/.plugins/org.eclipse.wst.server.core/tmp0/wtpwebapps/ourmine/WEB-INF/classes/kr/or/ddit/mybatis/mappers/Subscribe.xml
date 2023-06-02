@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.subscribe.dao.SubscribeDAO">
+
+<select id="subscribeList" resultType="hashmap">
+	SELECT *
+	  FROM SUBSCRIBE;
+
+</select>
+
+<select id="subscribeSelect" parameterType="int" resultType="kr.or.ddit.subscribe.vo.SubscribeVO">
+	SELECT *
+	  FROM SUBSCRIBE
+	 WHERE SUBSCRIBE_ID = #{subscribeId}
+</select>
+
+<select id="subscribeSelectByMemberId" parameterType="int" resultType="kr.or.ddit.subscribe.vo.SubscribeVO">
+	SELECT *
+	  FROM SUBSCRIBE
+	 WHERE MEMBER_ID = #{memberId}
+	   AND SUBSCRIBE_USE = 'Y'
+</select>
+
+<insert id="insertSubscribe" parameterType="kr.or.ddit.subscribe.vo.SubscribeVO">
+	INSERT INTO SUBSCRIBE(SUBSCRIBE_ID, MEMBER_ID, ITEM_ID, SUBSCRIBE_START_DATE,
+							SUBSCRIBE_END_DATE, SUBSCRIBE_UMP_ID, SUBSCRIBE_USE)
+	 VALUES( SUBSCRIBE_SEQ.NEXTVAL
+			, #{memberId , jdbcType=NUMERIC}
+			, #{itemId , jdbcType=NUMERIC}
+			, #{subscribeStartDate , jdbcType=DATE}
+			, #{subscribeEndDate , jdbcType=DATE}
+			, #{subscribeUmpId , jdbcType=CHAR}
+			, 'Y'
+	 		)
+</insert>
+
+<update id="updateSubscribeUse" >
+	UPDATE SUBSCRIBE
+         SET SUBSCRIBE_USE = 'N'
+       WHERE SUBSCRIBE_END_DATE = SYSDATE
+</update>
+
+<update id="updateSubscribeUseById" parameterType="int">
+	UPDATE SUBSCRIBE
+         SET SUBSCRIBE_USE = 'N'
+       WHERE 
+       <![CDATA[ SUBSCRIBE_END_DATE < SYSDATE]]>
+         AND MEMBER_ID = #{memberId}
+</update>
+
+</mapper>

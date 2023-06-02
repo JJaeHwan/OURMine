@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+<!-- 	appender : 로깅 매체  -->
+<!-- 	layout : 메시지 형식 -->
+<!-- 	level : 로깅 이벤트 등급 trace -> debug -> info -> warn -> error -> fatal -->
+<!-- 	logger : 메시지 기록자. -->
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm} %-5level %logger{.1} - %msg%n"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+  
+  
+  
+  <Logger name="org.springframework" level="info" additivity="false">
+      <AppenderRef ref="Console"/>
+  </Logger>
+  <Logger name="org.springframework.web" level="info" additivity="false">
+      <AppenderRef ref="Console"/>
+  </Logger>
+  <Logger name="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping" level="trace" additivity="false">
+      <AppenderRef ref="Console"/>
+  </Logger>
+  <Logger name="kr.or.ddit" level="debug" additivity="false">
+      <AppenderRef ref="Console"/>
+  </Logger>
+  <Logger name="jdbc.sqltiming" level="info" additivity="false">
+    <AppenderRef ref="Console"/>
+  </Logger>
+  <Logger name="jdbc.resultsettable" level="trace" additivity="false">
+    <AppenderRef ref="Console"/>
+  </Logger>
+    <Root level="warn">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+</Configuration>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.item.dao.ItemDAO">
+
+	<select id="itemList" resultType="kr.or.ddit.item.vo.ItemVO">
+	 	SELECT ITEM_ID, ITEM_NAME, ITEM_PRICE, ITEM_CONTENT, ITEM_DURATION
+		  FROM ITEM
+		 WHERE ITEM_REMOVE IS NOT NULL
+	</select>
+	
+	<select id ="itemSelect" parameterType="int" resultType="kr.or.ddit.item.vo.ItemVO">
+		SELECT ITEM_ID, ITEM_NAME, ITEM_PRICE, ITEM_CONTENT, DURATION
+		  FROM ITEM
+		 WHERE ITEM_ID = #{itemId}
+	</select>
+
+</mapper>

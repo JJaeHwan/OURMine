@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.alarm.dao.AlarmDAO">
+
+
+
+
+<insert id="insertAlarm" >
+    INSERT ALL
+    <foreach collection="alarms" item="item" >
+        <if test="item.projectId > 0">
+            into ALARM (PROJECT_ID, ALARM_CONTENT, ALARM_SENDER)
+            values (#{item.projectId}, #{item.alarmContent}, #{item.alarmSender})
+        </if>
+        <if test="item.projectIssueId > 0">
+            into ALARM (PROJECT_ISSUE_ID, ALARM_CONTENT, ALARM_SENDER)
+            values (#{item.projectIssueId}, #{item.alarmContent}, #{item.alarmSender})
+        </if>
+    </foreach>
+    SELECT * FROM DUAL
+</insert>
+
+<select id="alarmList" resultType="kr.or.ddit.alarm.vo.AlarmVO" parameterType="int">
+
+	SELECT AL.*,M.MEMBER_IMAGE_FILE_ROUTE,M.FILE_EXTENSION
+	FROM ALARM AL JOIN  MEMBER M ON AL.SENDER_ID = M.MEMBER_ID
+	WHERE AL.RECEIVER_ID = #{receiverId}
+	ORDER BY AL.ALARM_DATE DESC
+</select>
+
+<select id="alarmSelect" resultType="kr.or.ddit.alarm.vo.AlarmVO" parameterType="int">
+	SELECT *
+	FROM ALARM
+	WHERE ALARM_ID = #{alarmId}
+</select>
+
+</mapper>

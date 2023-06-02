@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.projecttodolist.dao.ProjectTodoListDAO">
+
+<!-- 일감별 todoList -->
+<select id="projectTodoList" resultType="kr.or.ddit.projecttodolist.vo.ProjectTodoListVO" parameterType="int">
+ 	SELECT 
+ 		PTL.TODO_ID
+ 		, PTL.TODO_TITLE
+ 		, PTL.TODO_CONTENT
+ 		, PTL.TODO_WRITER
+ 		, PTL.TODO_WRITE_DATE
+ 		, PTL.TODO_MODIFY_DATE
+ 		, PTL.TODO_REMOVE_WHETHER
+ 		, PTL.COMPLETE_WHETHER
+ 		, PTL.PROJECT_WORK_ID
+	FROM PROJECT_TODO_LIST PTL 
+	    LEFT JOIN PROJECT_WORK PW ON PTL.PROJECT_WORK_ID = PW.PROJECT_WORK_ID
+	WHERE PTL.PROJECT_WORK_ID = #{projectWorkId} AND TODO_REMOVE_WHETHER IS NULL
+	ORDER BY TODO_ID ASC 
+</select>
+
+<insert id="insertrProjectTodoList" parameterType="kr.or.ddit.projecttodolist.vo.ProjectTodoListVO">
+	INSERT INTO PROJECT_TODO_LIST(
+		TODO_TITLE
+		, TODO_CONTENT
+		, TODO_WRITER
+		, PROJECT_WORK_ID)
+	VALUES(
+		#{todoTitle, jdbcType=VARCHAR}
+		, #{todoContent, jdbcType=VARCHAR}
+		, #{todoWriter, jdbcType=VARCHAR}
+		, #{projectWorkId, jdbcType=NUMERIC})
+</insert>
+
+<update id="completeProjectTodoList" parameterType="int">
+	UPDATE PROJECT_TODO_LIST
+	SET
+		COMPLETE_WHETHER = 'C'
+	WHERE TODO_ID = #{todoId}
+</update>
+<update id="returnProjectTodoList" parameterType="int">
+	UPDATE PROJECT_TODO_LIST
+	SET
+		COMPLETE_WHETHER = ''
+	WHERE TODO_ID = #{todoId}
+</update>
+
+<delete id="deleteProjectTodoList" parameterType="int">
+	UPDATE PROJECT_TODO_LIST
+	SET
+		TODO_REMOVE_WHETHER = 'Y'
+	WHERE TODO_ID = #{todoId}
+</delete>
+
+</mapper>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.chatting.dao.ChattingDAO">
+
+
+	<insert id="insertMessage" parameterType="kr.or.ddit.chatting.vo.ChatVO">
+		INSERT INTO chatting_content (
+		    chatting_id,
+		    member_id,
+		    chatting_content,
+		    chatting_content_time
+		) VALUES (
+		    #{chattingId},
+		    #{memberId},
+		    #{chattingContent},
+		    sysdate
+		)
+	</insert>
+	
+	<select id="selectChatCont" resultType="kr.or.ddit.chatting.vo.ChatVO">
+		SELECT
+		    cc.chatting_id,
+		    cc.member_id,
+		    cc.chatting_content,
+		    cc.remove_whether,
+		    cc.chatting_content_time,
+            m.member_name,
+            c.CHATTING_NAME 
+		FROM
+		    chatting_content cc
+                join member m on cc.MEMBER_ID = m.member_id 
+                join CHATTING c on cc.CHATTING_ID = c.CHATTING_ID 
+		where cc.CHATTING_ID = #{chattingId}
+				and remove_whether is null
+		order by chatting_content_time
+	</select>
+	
+</mapper>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.projectissue.dao.ProjectIssueDAO">
+
+
+<select id="projectIssueList" resultType="ProjectIssueVO" parameterType="ProjectIssueVO">
+SELECT PI.PROJECT_ISSUE_ID,PI.ISSUE_TITLE, PI.ISSUE_CONTENT, PI.ISSUE_EVENT_DATE, PI.PROCESS_ET_DATE ,PI.PROJECT_STATUS_ID , PS.PROJECT_STATUS_NAME, PIC.PROJECT_ISSUE_CODE_NAME, PI.PROJECT_ISSUE_WRITER
+    FROM PROJECT_ISSUE PI
+    JOIN PROJECT_STATUS PS on PI.PROJECT_STATUS_ID = PS.PROJECT_STATUS_ID
+    JOIN PROJECT_ISSUE_CODE PIC on PI.PROJECT_ISSUE_CODE_ID = PIC.PROJECT_ISSUE_CODE_ID
+    WHERE PROJECT_ID = #{projectId}
+ 	<if test="search != null" >
+ 	and PI.ISSUE_TITLE like '%' || #{search} || '%'
+ 	</if>
+</select>
+<insert id="insertProjectIssue" parameterType="ProjectIssueVO">
+<selectKey order="AFTER" keyProperty="projectIssueId" resultType="int">
+SELECT NVL(MAX(PROJECT_ISSUE_ID),0)
+		FROM PROJECT_ISSUE
+</selectKey>
+INSERT INTO PROJECT_ISSUE (
+PROJECT_ID , MEMBER_ID , COMPANY_ID , PROJECT_ROLE_ID
+, PROJECT_ISSUE_CODE_ID
+, TRACKER_ID
+, ISSUE_TITLE
+, ISSUE_CONTENT
+, PROJECT_ISSUE_WRITER
+, PROCESS_ET_DATE
+, PROJECT_ISSUE_PIC_ID
+, PROJECT_ISSUE_PIC_NAME
+)
+VALUES (#{projectId}, #{memberId}, #{companyId}, #{projectRoleId}
+, #{projectIssueCodeId}
+, #{trackerId}
+, #{issueTitle}
+, #{issueContent}
+, #{projectIssueWriter}
+, #{processEtDate}
+, #{projectIssuePicId}
+, #{projectIssuePicName}
+)
+</insert>
+
+<select id="projectCodeList" resultType="ProjectIssueVO">
+SELECT PIC.PROJECT_ISSUE_CODE_ID, PROJECT_ISSUE_CODE_NAME
+FROM PROJECT_ISSUE_CODE PIC
+</select>
+
+<select id="projectTrackerList" resultType="ProjectIssueVO">
+SELECT TRACKER_ID, TRACKER_NAME
+    FROM TRACKER
+</select>
+
+<select id="projectRoleSelect" resultType="ProjectIssueVO" parameterType="ProjectIssueVO" >
+
+select PROJECT_ROLE_ID
+from PROJECT_ATTEND
+where MEMBER_ID = #{memberId}
+  and PROJECT_ID = #{projectId}
+</select>
+
+<update id="updateProjectIssueStatus" parameterType="int">
+UPDATE PROJECT_ISSUE
+SET
+    PROJECT_STATUS_ID = 2
+
+WHERE PROJECT_ISSUE_ID = #{projectIssueId}
+</update>
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+

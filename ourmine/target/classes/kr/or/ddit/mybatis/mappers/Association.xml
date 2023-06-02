@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.member.dao.AssociationDAO">
+
+<select id="associationSelectOne" resultType="kr.or.ddit.member.vo.AssociationVO" parameterType="int">
+	SELECT *
+FROM ASSOCIATION
+WHERE MEMBER_ID = #{memberId}
+
+</select>
+
+<select id="associationList" resultType="kr.or.ddit.member.vo.AssociationVO" parameterType="kr.or.ddit.member.vo.AssociationVO">
+SELECT * FROM (
+                  SELECT T.*, ROW_NUMBER() OVER (PARTITION BY T.member_id ORDER BY T.PROJECT_ID DESC) AS rn
+                  FROM (
+                           SELECT A.member_id, B.MEMBER_NAME, B.MEMBER_EMAIL, A.PROJECT_ID, A.PROJECT_ROLE_ID, C.COMPANY_ID, A.PROJECT_ATTEND_AK, B.MEMBER_IMAGE_FILE_ROUTE, B.FILE_EXTENSION, 'ATTEND' AS projectAttendStatus
+                           FROM PROJECT_ATTEND A
+                                    JOIN MEMBER B ON A.MEMBER_ID = B.MEMBER_ID
+                                    JOIN ASSOCIATION C ON A.MEMBER_ID = C.MEMBER_ID
+                           WHERE A.PROJECT_ID = #{projectId} AND C.COMPANY_ID =#{companyId} and c.ORGCHART_ID is not null
+
+                           UNION ALL
+
+                           SELECT A.member_id, B.MEMBER_NAME, B.MEMBER_EMAIL, A.PROJECT_ID, A.PROJECT_ROLE_ID, C.COMPANY_ID, A.PROJECT_ATTEND_AK, B.MEMBER_IMAGE_FILE_ROUTE, B.FILE_EXTENSION, 'NO' AS projectAttendStatus
+                           FROM PROJECT_ATTEND A
+                               JOIN MEMBER B ON A.MEMBER_ID = B.MEMBER_ID
+                               JOIN ASSOCIATION C ON A.MEMBER_ID = C.MEMBER_ID
+                           WHERE A.PROJECT_ID != #{projectId} AND C.COMPANY_ID = #{companyId} AND NOT EXISTS (SELECT 1 FROM PROJECT_ATTEND WHERE PROJECT_ID = #{projectId} AND MEMBER_ID = A.MEMBER_ID) and a.PROJECT_ROLE_ID=3 and c.ORGCHART_ID is not null
+
+                           UNION ALL
+
+                           SELECT B.MEMBER_ID, B.MEMBER_NAME, B.MEMBER_EMAIL, 0 AS PROJECT_ID, 0 AS PROJECT_ROLE_ID, C.COMPANY_ID, 0 AS PROJECT_ATTEND_AK, B.MEMBER_IMAGE_FILE_ROUTE, B.FILE_EXTENSION, 'NO' AS projectAttendStatus
+                           FROM MEMBER B
+                               JOIN ASSOCIATION C ON B.MEMBER_ID = C.MEMBER_ID
+                           WHERE C.COMPANY_ID = #{companyId} AND NOT EXISTS (SELECT 1 FROM PROJECT_ATTEND WHERE MEMBER_ID = C.MEMBER_ID) and b.MEMBER_GRADE_ID != 2 and c.ORGCHART_ID is not null
+                       ) T
+              ) T2
+WHERE T2.rn = 1
+ORDER BY T2.PROJECT_ROLE_ID ASC
+
+</select>
+
+<insert id="insertAssociation" parameterType="kr.or.ddit.member.vo.AssociationVO">
+
+INSERT INTO ASSOCIATION(MEMBER_ID, COMPANY_ID)
+VALUES (#{memberId},#{companyId})
+</insert>
+
+<delete id="deleteCompanyAssociation" parameterType="kr.or.ddit.company.vo.CompanyVO">
+	UPDATE ASSOCIATION
+	SET ASSOCIATION_LEAVE_DATE = SYSDATE,
+    ASSOCIATION_LEAVE_WHETHER = 'Y'
+	WHERE COMPANY_ID = #{companyId}
+</delete>
+
+
+<!-- <select id="" resultType="AssociationVO" parameterType="AssociationVO">
+
+SELECT A.MEMBER_ID, M.MEMBER_NAME
+FROM ASSOCIATION A
+    JOIN MEMBER M on A.MEMBER_ID = M.MEMBER_ID
+    JOIN PROJECT_ATTEND PA on A.MEMBER_ID = PA.MEMBER_ID and A.COMPANY_ID = PA.COMPANY_ID
+
+WHERE PA.COMPANY_ID = #{companyId} AND PA.PROJECT_ID = #{projectId};
+</select> -->
+
+<insert id="companyMemberInsert" parameterType="kr.or.ddit.company.vo.CompanyVO">
+	INSERT INTO ASSOCIATION(MEMBER_ID, COMPANY_ID)
+	VALUES(#{memberId},#{companyId})
+</insert>
+
+<delete id="deleteAssociation" parameterType="kr.or.ddit.company.vo.CompanyVO">
+	DELETE FROM ASSOCIATION
+	WHERE MEMBER_ID = #{memberId} AND COMPANY_ID = #{companyId}
+</delete>
+
+</mapper>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.board.dao.BoardTypeDAO">
+
+
+	<select id="boardTypeList" resultType="kr.or.ddit.board.vo.BoardTypeVO" parameterType="int">
+        SELECT BOARD_TYPE_ID, BOARD_TYPE
+        FROM BOARD_TYPE
+        WHERE PROJECT_ID = #{projectId}
+        	and REMOVE_WHETHER is null 
+        	and NOT BOARD_TYPE IN ('공지')
+        
+<!--         SELECT M.MEMBER_NAME, P.PROJECT_ID,BOARD_TYPE -->
+<!-- 		 FROM BOARD_TYPE BT JOIN PROJECT  P ON BT.PROJECT_ID = P.PROJECT_ID -->
+<!-- 		 JOIN COMPANY ON P.COMPANY_ID = COMPANY.COMPANY_ID -->
+<!-- 		 JOIN ASSOCIATION A2 on COMPANY.COMPANY_ID = A2.COMPANY_ID -->
+<!-- 		 JOIN MEMBER M ON A2.MEMBER_ID = M.MEMBER_ID -->
+<!-- 		 WHERE P.COMPANY_ID = 1 AND M.MEMBER_ID = 2 AND P.PROJECT_ID = 1 -->
+	</select>
+
+	<insert id="insertBoardType" parameterType="kr.or.ddit.board.vo.BoardTypeVO">
+
+		INSERT INTO board_type (
+            project_id,
+            board_type
+        ) VALUES (
+            #{projectId},
+            #{boardType}
+        )
+	</insert>
+	<update id="deleteBoardType">
+		UPDATE board_type
+            SET 
+                REMOVE_WHETHER = 'Y'
+        WHERE
+            board_type_id = #{boardTypeId}
+	</update>
+	
+
+</mapper>

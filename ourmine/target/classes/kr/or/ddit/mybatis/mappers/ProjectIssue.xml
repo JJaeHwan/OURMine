@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.projectissue.dao.ProjectIssueDAO">
+
+<select id="projectIssueList" resultType="kr.or.ddit.vo.Page" parameterType="kr.or.ddit.vo.Page">
+		      
+SELECT *
+FROM (
+         SELECT a.*, ROWNUM rnum
+         FROM (
+                  SELECT PI.PROJECT_ISSUE_ID,PI.ISSUE_TITLE, PI.ISSUE_CONTENT, PI.ISSUE_EVENT_DATE
+     , PI.PROCESS_ET_DATE ,PI.PROJECT_STATUS_ID , PS.PROJECT_STATUS_NAME
+     , PIC.PROJECT_ISSUE_CODE_NAME, PI.PROJECT_ISSUE_WRITER , PI.PROJECT_ISSUE_COMMENT, PI.PROJECT_ROLE_ID
+     ,(SELECT TRACKER_NAME FROM TRACKER WHERE PI.TRACKER_ID = TRACKER.TRACKER_ID) TRACKER_NAME
+     ,(select PA.PROJECT_ROLE_ID from MEMBER M JOIN PROJECT_ATTEND PA on M.MEMBER_ID = PA.MEMBER_ID WHERE M.MEMBER_ID = #{memberId} AND PROJECT_ID =#{projectId}) AS MY_ROLE_ID
+     , M.MEMBER_IMAGE_FILE_ROUTE
+     , M.FILE_EXTENSION
+FROM PROJECT_ISSUE PI
+         JOIN PROJECT_STATUS PS on PI.PROJECT_STATUS_ID = PS.PROJECT_STATUS_ID
+         JOIN PROJECT_ISSUE_CODE PIC on PI.PROJECT_ISSUE_CODE_ID = PIC.PROJECT_ISSUE_CODE_ID
+         LEFT JOIN MEMBER M ON M.MEMBER_NAME = PROJECT_ISSUE_WRITER
+WHERE PROJECT_ID = #{projectId}
+                  	<if test="search != null" > 
+						    	and PI.ISSUE_TITLE like '%' || #{search} || '%' 
+						    </if> 
+                        ORDER BY PI.PROJECT_STATUS_ID 
+                    ) a
+               WHERE ROWNUM <![CDATA[<]]>= #{currentPage} * #{pageSize}
+           )
+      WHERE rnum <![CDATA[>]]> (#{currentPage} - 1) * #{pageSize}
+
+
+		
+</select>
+
+<select id="totalData" resultType="int" parameterType="int">
+SELECT COUNT(*) 
+FROM PROJECT_ISSUE
+WHERE PROJECT_ID = #{projectId} and ISSUE_REMOVE_WHETHER is null
+
+</select>
+
+<select id="projectIssueListBottom" resultType="kr.or.ddit.projectissue.vo.ProjectIssueVO" parameterType="int">
+SELECT PI.PROJECT_ISSUE_ID,PI.ISSUE_TITLE, PI.ISSUE_CONTENT, PI.ISSUE_EVENT_DATE, PI.PROCESS_ET_DATE ,PI.PROJECT_STATUS_ID , PS.PROJECT_STATUS_NAME, PIC.PROJECT_ISSUE_CODE_NAME, PI.PROJECT_ISSUE_WRITER
+     ,(SELECT TRACKER_NAME FROM TRACKER WHERE PI.TRACKER_ID = TRACKER.TRACKER_ID) TRACKER_NAME
+     , M.MEMBER_IMAGE_FILE_ROUTE, M.FILE_EXTENSION
+FROM PROJECT_ISSUE PI
+        LEFT JOIN MEMBER M ON PI.MEMBER_ID = M.MEMBER_ID
+         JOIN PROJECT_STATUS PS on PI.PROJECT_STATUS_ID = PS.PROJECT_STATUS_ID
+         JOIN PROJECT_ISSUE_CODE PIC on PI.PROJECT_ISSUE_CODE_ID = PIC.PROJECT_ISSUE_CODE_ID
+WHERE PROJECT_ID = #{projectId}
+</select>
+
+
+<insert id="insertProjectIssue" parameterType="kr.or.ddit.projectissue.vo.ProjectIssueVO">
+<selectKey order="AFTER" keyProperty="projectIssueId" resultType="int">
+SELECT NVL(MAX(PROJECT_ISSUE_ID),0)
+		FROM PROJECT_ISSUE
+</selectKey>
+INSERT INTO PROJECT_ISSUE (
+PROJECT_ID , MEMBER_ID , COMPANY_ID , PROJECT_ROLE_ID
+, PROJECT_ISSUE_CODE_ID
+, TRACKER_ID
+, ISSUE_TITLE
+, ISSUE_CONTENT
+, PROJECT_ISSUE_WRITER
+, PROCESS_ET_DATE
+, PROJECT_ISSUE_PIC_ID
+, PROJECT_ISSUE_PIC_NAME
+)
+VALUES (#{projectId}, #{memberId}, #{companyId}, #{projectRoleId}
+, #{projectIssueCodeId}
+, #{trackerId}
+, #{issueTitle}
+, #{issueContent}
+, #{projectIssueWriter}
+, #{processEtDate}
+, #{projectIssuePicId}
+, #{projectIssuePicName}
+)
+</insert>
+
+<select id="projectCodeList" resultType="kr.or.ddit.projectissue.vo.ProjectIssueVO">
+SELECT PIC.PROJECT_ISSUE_CODE_ID, PROJECT_ISSUE_CODE_NAME
+FROM PROJECT_ISSUE_CODE PIC
+</select>
+
+<select id="projectTrackerList" resultType="kr.or.ddit.projectissue.vo.ProjectIssueVO">
+SELECT TRACKER_ID, TRACKER_NAME
+    FROM TRACKER
+</select>
+
+<select id="projectRoleSelect" resultType="kr.or.ddit.projectissue.vo.ProjectIssueVO" parameterType="kr.or.ddit.projectissue.vo.ProjectIssueVO" >
+
+select PROJECT_ROLE_ID
+from PROJECT_ATTEND
+where MEMBER_ID = #{memberId}
+  and PROJECT_ID = #{projectId}
+</select>
+
+<update id="updateProjectIssueStatus" parameterType="int">
+UPDATE PROJECT_ISSUE
+SET
+    PROJECT_STATUS_ID = 2
+
+WHERE PROJECT_ISSUE_ID = #{projectIssueId}
+</update>
+
+<update id="updateProjectIssueComment" parameterType="kr.or.ddit.projectissue.vo.ProjectIssueVO">
+UPDATE PROJECT_ISSUE
+SET
+    PROJECT_ISSUE_COMMENT = #{projectIssueComment}
+
+WHERE PROJECT_ISSUE_ID = #{projectIssueId}
+
+</update>
+
+<select id="projectIssueSelect" resultType="kr.or.ddit.projectissue.vo.ProjectIssueVO" parameterType="int">
+    SELECT PROJECT_ISSUE_ID, PROJECT_ID, COMPANY_ID,PROJECT_ISSUE_WRITER, ISSUE_EVENT_DATE, ISSUE_TITLE, ISSUE_CONTENT , PROCESS_ET_DATE , PROJECT_STATUS_ID , PROJECT_ISSUE_COMMENT 
+    ,(SELECT PROJECT_ISSUE_CODE_NAME FROM PROJECT_ISSUE_CODE PIC WHERE PIC.PROJECT_ISSUE_CODE_ID = PROJECT_ISSUE.PROJECT_ISSUE_CODE_ID) AS PROJECT_ISSUE_CODE_NAME
+    ,(SELECT TRACKER_NAME FROM TRACKER T WHERE T.TRACKER_ID = PROJECT_ISSUE.TRACKER_ID) TRAKER_NAME
+    ,(SELECT PROJECT_STATUS_NAME FROM PROJECT_STATUS PS WHERE PS.PROJECT_STATUS_ID = PROJECT_ISSUE.PROJECT_STATUS_ID) PROJECT_STATUS_NAME
+    FROM PROJECT_ISSUE
+    WHERE PROJECT_ISSUE_ID = #{projectIssueId}
+</select>
+
+<select id="alarmReceiverList" resultType="kr.or.ddit.projectAttend.vo.ProjectAttendVO" parameterType="int">
+SELECT PA.PROJECT_ID, PA.MEMBER_ID
+,(SELECT MEMBER_NAME FROM MEMBER WHERE PA.MEMBER_ID = MEMBER.MEMBER_ID) MEMBER_NAME
+FROM PROJECT_ATTEND PA
+WHERE PROJECT_ID = #{projectId}
+</select>
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+

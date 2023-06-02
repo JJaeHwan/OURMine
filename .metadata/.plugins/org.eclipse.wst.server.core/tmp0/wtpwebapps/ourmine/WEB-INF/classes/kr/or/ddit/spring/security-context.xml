@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-5.7.xsd">
+
+<!--1. Filter, XML, In memory 기반의 인증구조
+	2. Role 기반의 선택적 랜더링 : ex)관리자에게는 관리자에 맞는 메뉴구조 랜더링, 커스텀 태그 사용
+	3. MVC 모든 레이어에서 인증 객체를 확보하는 방법
+	4. 데이터베이스 기반의 인증구조
+	5. 비밀 번호 단방향 암호화
+	6. 설정 커스터마이징   -->
+
+<!-- 	Authentication Manager -> AuthenticationProvider(신원 확인) -> UserDetailService(=MemberDAO,사용자조회) -->
+	<bean id="passwordEncoder" class="org.springframework.security.crypto.factory.PasswordEncoderFactories"
+		factory-method="createDelegatingPasswordEncoder"
+	/>
+	<security:authentication-manager id="authManager" erase-credentials="false">
+		<security:authentication-provider user-service-ref="memberDAO">
+			<!-- <security:user-service> -->
+			<!-- 	<security:user name="a001" password="java" authorities="ROLE_USER"/>
+				<security:user name="c001" password="java" authorities="ROLE_ADMIN"/> -->
+			<!-- </security:user-service> -->
+			<security:password-encoder ref="passwordEncoder"/>
+		</security:authentication-provider>
+	</security:authentication-manager>
+
+
+
+	<bean id="authenticationFailureHandler"  class="kr.or.ddit.security.handler.CustomAuthenticationFailureHandler"
+		p:targetURL="/login"
+	 />
+
+	<bean id="customeLoginSuccessHandler" class="kr.or.ddit.commons.controller.CustomeLoginSuccessHandler">
+    <property name="defaultUrl" value="/"/>
+</bean>
+
+
+	<!-- <security:http pattern="/homepage/**" security="none"/> -->
+
+	<!-- 웹소켓 URI 스프링 시큐리티에서 제외 . -->
+	<!-- <security:http pattern="/ws/**" security="none"/> -->
+
+	<!-- 알림 웹소켓 URI 스프링 시큐리티에서 제외 . -->
+	<security:http pattern="/aws/**" security="none"/>
+
+	<security:http pattern="/member/memberJoin/**" security="none"/>
+<!-- 	<security:http pattern="/member/memberView/**" security="none"/> -->
+	<security:http pattern="/member/member/json/**" security="none"/>
+<!-- 	<security:http pattern="/board/boardForm/**" security="none"/> -->
+
+
+	<security:http pattern="/resources/**" security="none"/>
+
+	<security:http authentication-manager-ref="authManager">
+		<security:form-login
+			default-target-url="/" always-use-default-target="true"
+			login-page="/login"
+			username-parameter="memberEmail"
+			password-parameter="memberPassword"
+			authentication-failure-handler-ref="authenticationFailureHandler"
+			authentication-success-handler-ref="customeLoginSuccessHandler"
+
+		/>
+
+
+		<!-- AuthorizationManger -->
+		<security:logout logout-url="/logout"/>
+		<security:intercept-url pattern="/login" access="permitAll"/>
+		<security:intercept-url pattern="/index" access="permitAll"/>
+		<security:intercept-url pattern="/homepage" access="permitAll"/>
+<!-- 		<security:intercept-url pattern="/biz/**" access="permitAll"/> ADMIN -->
+			<!-- 조직도 접근제한 -->
+<!-- 			<security:intercept-url pattern="/company/{companyId}/orgchart/**" access="hasRole('MANAGER')"/>  MANGER -->
+
+			<!--  프로젝트 리스트 접근제한 -->
+			<security:intercept-url pattern="/company/{companyId}/project/projectList" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompany(authentication, request)"/>  <!-- MANGER -->
+
+			<security:intercept-url pattern="/company/{companyId}/project/projectList/projectView" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyRole(authentication, request, 'PM')"/>
+			<security:intercept-url pattern="/company/{companyId}/project/projectList/projectDelete" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyRole(authentication, request, 'PM')"/>
+			<security:intercept-url pattern="/company/{companyId}/project/projectList/projectInsertMember" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyRole(authentication, request, 'PM')"/>
+
+			<!-- 프로젝트 일감 접근제한 -->
+			<security:intercept-url pattern="/company/{companyId}/project/{projectId}/projectWork/projectWorkForm" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyProjectRole(authentication, request, 'PL') or T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyProjectRole(authentication, request, 'PM')"/>
+			<security:intercept-url pattern="/company/{companyId}/project/{projectId}/projectWork/projectWorkView" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyProjectRole(authentication, request, 'PL') or T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyProjectRole(authentication, request, 'PM')"/>
+
+
+<!-- 		<security:intercept-url pattern="/company/**" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyProject(authentication, request)"/>  MANGER -->
+<!-- 		<security:intercept-url pattern="/company/*/project/**" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyProjectRole(authentication, request, 'PL')"/> MANGER or MEMBER(PL) -->
+<!-- 		<security:intercept-url pattern="/company/*/project/*/**" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyProject(authentication, request, 'JUNIOR','SENIOR')"/> MEMBER -->
+<!-- 		<security:intercept-url pattern="/company/*/project/*/**" access="T(kr.or.ddit.commons.auth.AutorityUtils).hasCompanyProject(authentication, request, 'JUNIOR','SENIOR')"/> MEMBER -->
+		<security:intercept-url pattern="/noticeBoard/noticeBoardListJson" access="permitAll"/>
+		<security:intercept-url pattern="/noticeBoard/fnqNoticeBoardListJson" access="permitAll"/>
+
+		<security:intercept-url pattern="/includee/headerMenu.jsp" access="hasAnyRole('MEMBER', 'MANAGER')"/>
+<!-- 		<security:intercept-url pattern="/project/**/projectEdit" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyProjectRole(authentication, request, 'PL')"/>	 -->
+<!-- 		<security:intercept-url pattern="/project/**/projectView" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyProject(authentication, request, 'JUNIOR')"/>	 -->
+<!-- 		<security:intercept-url pattern="/project/**" access="T(kr.or.ddit.commons.auth.AutorityUtils).inCompanyProject(authentication, request)"/>	 -->
+		<security:intercept-url pattern="/includee/headerMenuAdmin.jsp" access="hasRole('ADMIN')"/>
+
+		<security:intercept-url pattern="/includee/leftMenu.jsp" access="hasRole('MEMBER')"/>
+		<security:intercept-url pattern="/includee/leftMenuAdmin.jsp" access="hasRole('ADMIN')"/>
+		<security:intercept-url pattern="/includee/leftMenuManager.jsp" access="hasRole('MANAGER')"/>
+
+		<security:intercept-url pattern="/**" access="isAuthenticated()"/>
+
+	</security:http>
+</beans>

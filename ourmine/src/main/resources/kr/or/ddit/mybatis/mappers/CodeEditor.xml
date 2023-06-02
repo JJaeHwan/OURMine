@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.codeEditor.dao.CodeEditorDAO">
+	<select id="codeSelectByLanguage" resultType="String" parameterType="int">
+		 SELECT CODE_MAIN
+		   FROM CODE_EDITOR
+		  WHERE CODE_EDITOR_ID = #{codeEditorId}
+	</select>	
+
+	<select id="savedCodeList" resultType="hashmap" parameterType="kr.or.ddit.codeEditor.vo.CodeVO">
+		SELECT CODE_ID, CODE_TITLE, CODE_CONTENT, CODE_EDITOR_ID
+		  FROM CODE
+		 WHERE MEMBER_ID = #{memberId}
+		   AND PROJECT_ID = #{projectId} 
+	</select>
+	
+	<select id="getWholeCodeListByProject" resultType="hashmap" parameterType="int">
+		SELECT CODE_TITLE, CODE_CONDTENT, CODE_EDITOR_ID
+		  FROM CODE
+		 WHERE COMPANY_ID = #{companyId}
+		   AND PROJECT_ID = #{projectId} 
+	</select>
+	
+	<select id="getSelectedCode" resultType="kr.or.ddit.codeEditor.vo.CodeVO" parameterType="int">
+		SELECT CODE_TITLE, CODE_CONDTENT, CODE_EDITOR_ID
+		  FROM CODE
+		 WHERE CODE_ID = #{code_id}  
+	</select>
+	
+	<insert id="codeInsert" parameterType="kr.or.ddit.codeEditor.vo.CodeVO">
+		INSERT INTO CODE(CODE_ID, CODE_EDITOR_ID, MEMBER_ID, CODE_CONTENT, CODE_TITLE, PROJECT_ID, COMPANY_ID)
+		VALUES (CODE_ID_SEQ.NEXTVAL, #{codeEditorId}, #{memberId}, #{codeContent}, #{codeTitle}, #{projectId}, #{companyId})
+	</insert>
+
+	<update id="updateCode" parameterType="kr.or.ddit.codeEditor.vo.CodeVO">
+		UPDATE CODE
+		  SET
+		  	CODE_CONTENT = #{codeContent}
+		 WHERE CODE_ID = #{codeId} 	
+	</update>
+
+</mapper>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.file.dao.FileDAO">
+
+<select id="fileList" resultType="kr.or.ddit.board.vo.BoardVO" parameterType="int">
+	SELECT DISTINCT BF.BOARD_FILE_ID,BF.ORIGINAL_FILE_NAME, BF.FILE_CREATE_DATE, B.BOARD_WRITER, BF.FILE_EXTENSION,BF.SAVE_FILE_NAME
+	FROM BOARD B
+	        JOIN BOARD_FILE BF ON B.BOARD_ID = BF.BOARD_ID
+	        JOIN PROJECT_ATTEND PA ON B.PROJECT_ID = PA.PROJECT_ID
+	WHERE B.COMPANY_ID = #{companyId}
+	ORDER BY BOARD_FILE_ID DESC
+</select>
+
+</mapper>

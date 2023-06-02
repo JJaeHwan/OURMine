@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.projectAttend.dao.GitDAO">
+
+	<select id="gitList" resultType="kr.or.ddit.projectAttend.vo.GitVO" parameterType="kr.or.ddit.projectAttend.vo.GitVO">
+		SELECT *
+		FROM GIT
+		WHERE PROJECT_ID = #{projectId}
+		ORDER BY COMMIT_DATE
+	</select>
+
+	<select id="gitCommitCount" resultType="GitVO">
+	SELECT MEMBER_NAME, COUNT(*) AS COMMIT_COUNT, (COUNT(*) * 100.0 / (SELECT COUNT(*) FROM GIT)) AS COMMIT_PERCENT
+      ,(SELECT SUM(IS_MERGED)
+        FROM GIT WHERE PROJECT_ID = #{projectId})  AS IS_MERGED,
+	(SELECT BRANCH_NAME FROM GIT WHERE (BRANCH_NAME LIKE '%bug%' OR BRANCH_NAME LIKE '%error%') AND COMMIT_DATE <![CDATA[<]]>= (SELECT MAX(COMMIT_DATE) FROM GIT)) AS ERROR_BRANCH
+	    FROM GIT
+	WHERE PROJECT_ID = #{projectId}
+	GROUP BY MEMBER_NAME
+	</select>
+
+	<select id="gitMemberCommitSelect" resultType="GitVO" parameterType="GitVO">
+		SELECT G.MEMBER_NAME,BRANCH_NAME,COMMIT_MESSAGE,COMMIT_DATE, M.MEMBER_IMAGE_FILE_ROUTE,M.FILE_EXTENSION
+		FROM GIT G LEFT JOIN MEMBER M on G.MEMBER_NAME = M.MEMBER_NAME
+		WHERE PROJECT_ID = #{projectId}
+		ORDER BY G.COMMIT_DATE
+	</select>
+</mapper>

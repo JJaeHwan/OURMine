@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.projectwork.dao.ProjectWorkDAO">
+
+<!-- 전체 일감 리스트 조회 -->
+<select id="projectWorkList" resultType="kr.or.ddit.vo.Page" parameterType="kr.or.ddit.vo.Page">
+ 	SELECT *
+		FROM (
+		         SELECT a.*, ROWNUM rnum
+		         FROM (
+						SELECT DISTINCT     PW.COMPANY_ID, PA.PROJECT_ID, PW.PROJECT_WORK_ID, PWS.PROJECT_WORK_STATUS
+					                        ,PP.PROJECT_PRIORITY_NAME, PW.PROJECT_WORK_TITLE, PW.PROJECT_WORK_PIC
+					                        , PW.PROJECT_WORK_START_DATE , PW.PROJECT_WORK_END_DATE
+					                        , PW.PROJECT_WORK_WRITE_DATE, PROJECT_PRIORITY_COLOR
+						                    , PW.PROJECT_WORK_CONTENT, PW.PROJECT_WORK_STATUS_ID, PW.PROJECT_PRIORITY_ID
+						                    , PW.PIC_ID, P.PROJECT_START_DATE, P.PROJECT_END_DATE
+						                    
+						FROM PROJECT_WORK PW
+						         JOIN PROJECT_WORK_STATUS PWS on PW.PROJECT_WORK_STATUS_ID = PWS.PROJECT_WORK_STATUS_ID
+						         JOIN PROJECT_PRIORITY PP on PW.PROJECT_PRIORITY_ID = PP.PROJECT_PRIORITY_ID
+						         JOIN PROJECT P on PW.PROJECT_ID = P.PROJECT_ID
+						         JOIN PROJECT_ATTEND PA on P.PROJECT_ID = PA.PROJECT_ID
+						         JOIN ASSOCIATION A ON PA.COMPANY_ID = A.COMPANY_ID
+						         JOIN COMPANY C ON A.COMPANY_ID = C.COMPANY_ID
+						         JOIN MEMBER M on A.MEMBER_ID = M.MEMBER_ID
+						WHERE PW.PROJECT_WORK_REMOVE_WHETHER = 'N'
+					 	AND C.COMPANY_ID = #{companyId}
+						AND PA.PROJECT_ID = #{projectId}
+						<if test="search != null" >
+						    	and PW.PROJECT_WORK_TITLE like '%' || #{search} || '%'
+						</if>
+						ORDER BY PROJECT_WORK_ID DESC
+					) a
+		         WHERE ROWNUM <![CDATA[<]]>= #{currentPage} * #{pageSize}
+		     )
+		WHERE rnum <![CDATA[>]]> (#{currentPage} - 1) * #{pageSize}
+
+</select>
+
+<select id="totalData" resultType="int" parameterType="int">
+SELECT COUNT(*)
+FROM PROJECT_WORK
+WHERE PROJECT_ID = #{projectId} and PROJECT_WORK_REMOVE_WHETHER = 'N'
+</select>
+
+
+<!-- 차트/캘린터용 일감리스트 -->
+<select id="pwList" resultType="kr.or.ddit.projectwork.vo.ProjectWorkVO" parameterType="kr.or.ddit.projectwork.vo.ProjectWorkVO">
+SELECT DISTINCT  PW.COMPANY_ID, PA.PROJECT_ID, PW.PROJECT_WORK_ID, PWS.PROJECT_WORK_STATUS
+                  ,PP.PROJECT_PRIORITY_NAME, PW.PROJECT_WORK_TITLE, PW.PROJECT_WORK_PIC
+                  , PW.PROJECT_WORK_START_DATE , PW.PROJECT_WORK_END_DATE
+                  , PW.PROJECT_WORK_WRITE_DATE, PROJECT_PRIORITY_COLOR
+                  , PW.PROJECT_WORK_CONTENT, PW.PROJECT_WORK_STATUS_ID, PW.PROJECT_PRIORITY_ID
+                  , PW.PIC_ID, P.PROJECT_START_DATE, P.PROJECT_END_DATE
+FROM PROJECT_WORK PW
+         JOIN PROJECT_WORK_STATUS PWS on PW.PROJECT_WORK_STATUS_ID = PWS.PROJECT_WORK_STATUS_ID
+         JOIN PROJECT_PRIORITY PP on PW.PROJECT_PRIORITY_ID = PP.PROJECT_PRIORITY_ID
+         JOIN PROJECT P on PW.PROJECT_ID = P.PROJECT_ID
+         JOIN PROJECT_ATTEND PA on P.PROJECT_ID = PA.PROJECT_ID
+         JOIN ASSOCIATION A ON PA.COMPANY_ID = A.COMPANY_ID
+         JOIN COMPANY C ON A.COMPANY_ID = C.COMPANY_ID
+WHERE PW.PROJECT_WORK_REMOVE_WHETHER = 'N'
+	AND C.COMPANY_ID = #{companyId}
+	AND PA.PROJECT_ID = #{projectId}
+	ORDER BY PROJECT_WORK_ID DESC
+</select>
+
+<!-- 자기 일감 리스트 조회 -->
+<!-- <select id="" resultType="kr.or.ddit.projectwork.vo.ProjectWorkVO" parameterType="int">
+
+	SELECT DISTINCT     PW.COMPANY_ID, PA.PROJECT_ID, PW.PROJECT_WORK_ID, PWS.PROJECT_WORK_STATUS
+                        ,PP.PROJECT_PRIORITY_NAME, PW.PROJECT_WORK_TITLE, PW.PROJECT_WORK_PIC
+                        , PW.PROJECT_WORK_START_DATE , PW.PROJECT_WORK_END_DATE
+                        , PW.PROJECT_WORK_WRITE_DATE, PROJECT_PRIORITY_COLOR
+	                    , PW.PROJECT_WORK_CONTENT, PW.PROJECT_WORK_STATUS_ID, PW.PROJECT_PRIORITY_ID
+	                    , PA.MEMBER_ID
+	FROM PROJECT_WORK PW
+	         JOIN PROJECT_WORK_STATUS PWS on PW.PROJECT_WORK_STATUS_ID = PWS.PROJECT_WORK_STATUS_ID
+	         JOIN PROJECT_PRIORITY PP on PW.PROJECT_PRIORITY_ID = PP.PROJECT_PRIORITY_ID
+	         JOIN PROJECT P on PW.PROJECT_ID = P.PROJECT_ID
+	         JOIN PROJECT_ATTEND PA on P.PROJECT_ID = PA.PROJECT_ID
+	         JOIN ASSOCIATION A ON PA.COMPANY_ID = A.COMPANY_ID
+	         JOIN COMPANY C ON A.COMPANY_ID = C.COMPANY_ID
+	WHERE PW.PROJECT_WORK_REMOVE_WHETHER = 'N'
+ 	    AND C.COMPANY_ID = #{companyId}
+	    AND PA.PROJECT_ID = #{projectId}
+	    AND PA.MEMBER_ID = #{memberId}
+
+</select>  -->
+
+<!--     일감 등록    -->
+<insert id="insertProjectWork" parameterType="kr.or.ddit.projectwork.vo.ProjectWorkVO">
+
+	INSERT INTO PROJECT_WORK (
+	    COMPANY_ID,
+	    PROJECT_ID,
+	    MEMBER_ID,
+	    PROJECT_ROLE_ID,
+	    PROJECT_WORK_STATUS_ID,
+	    PROJECT_PRIORITY_ID,
+	    PROJECT_WORK_TITLE,
+	    PROJECT_WORK_CONTENT,
+	    PROJECT_WORK_WRITE_DATE,
+	    PROJECT_WORK_WRITER,
+	    PROJECT_WORK_PIC,
+	    PROJECT_WORK_START_DATE,
+	    PROJECT_WORK_END_DATE,
+	    PROJECT_WORK_REMOVE_WHETHER,
+	    PIC_ID
+	) VALUES (
+		#{companyId , jdbcType=NUMERIC}
+		, #{projectId , jdbcType=NUMERIC}
+		, #{memberId , jdbcType=NUMERIC}
+		, #{projectRoleId, jdbcType=NUMERIC}
+		, #{projectWorkStatusId , jdbcType=NUMERIC}
+		, #{projectPriorityId , jdbcType=NUMERIC}
+		, #{projectWorkTitle , jdbcType=VARCHAR}
+		, #{projectWorkContent , jdbcType=VARCHAR}
+		, SYSDATE
+		, #{projectWorkWriter , jdbcType=VARCHAR}
+		, #{projectWorkPic , jdbcType=VARCHAR}
+		, #{projectWorkStartDate , jdbcType=DATE}
+		, #{projectWorkEndDate , jdbcType=DATE}
+		, 'N'
+		, #{picId, jdbcType=NUMERIC}
+	)
+
+</insert>
+
+<!--       일감 수정      -->
+<update id="updateProjectWork" parameterType="kr.or.ddit.projectwork.vo.ProjectWorkVO">
+	UPDATE PROJECT_WORK
+    SET PROJECT_WORK_STATUS_ID = #{projectWorkStatusId,jdbcType=NUMERIC}
+        ,PROJECT_WORK_PIC = #{projectWorkPic,jdbcType=VARCHAR}
+        ,PROJECT_WORK_START_DATE = #{projectWorkStartDate,jdbcType=DATE}
+        ,PROJECT_WORK_END_DATE= #{projectWorkEndDate,jdbcType=DATE}
+        ,PROJECT_PRIORITY_ID= #{projectPriorityId,jdbcType=NUMERIC}
+        ,PROJECT_WORK_TITLE= #{projectWorkTitle,jdbcType=VARCHAR}
+        ,PROJECT_WORK_CONTENT=#{projectWorkContent,jdbcType=VARCHAR}
+        ,PIC_ID = #{picId ,jdbcType=NUMERIC}
+    WHERE PROJECT_WORK_ID = #{projectWorkId,jdbcType=NUMERIC}
+   <!--  AND MEMBER_ID = #{memberId,jdbcType=NUMERIC} -->
+</update>
+
+<!--    일감 삭제      -->
+<delete id="deleteProjectWork" parameterType="int">
+	UPDATE PROJECT_WORK
+	   SET PROJECT_WORK_REMOVE_WHETHER = 'Y'
+	WHERE PROJECT_WORK_ID = #{projectWorkId,jdbcType=NUMERIC}
+</delete>
+
+<!-- 역할 가져오기 -->
+<select id="selectProjectRole" parameterType="kr.or.ddit.projectwork.vo.ProjectWorkVO">
+	SELECT
+		PROJECT_ROLE_ID
+	FROM
+	    PROJECT_ATTEND
+	WHERE PROJECT_ID = #{projectId} and MEMBER_ID = #{memberId}
+</select>
+
+<!-- 프로젝트별 회원 목록 -->
+<select id="projectMemberList" resultType="kr.or.ddit.projectAttend.vo.ProjectAttendVO" parameterType="int">
+SELECT  M.MEMBER_NAME, M.MEMBER_ID
+FROM PROJECT_ATTEND PA
+         JOIN ASSOCIATION A on PA.MEMBER_ID = A.MEMBER_ID and PA.COMPANY_ID = A.COMPANY_ID
+         JOIN MEMBER M on A.MEMBER_ID = M.MEMBER_ID
+         JOIN COMPANY C on A.COMPANY_ID = C.COMPANY_ID
+         JOIN PROJECT P ON P.PROJECT_ID = PA.PROJECT_ID
+         JOIN PROJECT_ROLE PR ON PR.PROJECT_ROLE_ID = PA.PROJECT_ROLE_ID
+WHERE P.PROJECT_ID = #{projectId}
+</select>
+
+<!-- 나의 일감 리스트 조회 -->
+<select id="projectTodoWorkList" resultType="kr.or.ddit.vo.Page" parameterType="kr.or.ddit.vo.Page">
+	SELECT *
+	FROM (
+		SELECT a.*, ROWNUM rnum
+		FROM (
+			SELECT DISTINCT
+			    PW.COMPANY_ID
+			    , PA.PROJECT_ID
+			    , PW.PROJECT_WORK_ID
+			    , PWS.PROJECT_WORK_STATUS
+			    , PP.PROJECT_PRIORITY_NAME
+			    , PW.PROJECT_WORK_TITLE
+			    , PW.PROJECT_WORK_PIC
+			    , PW.PROJECT_WORK_START_DATE
+			    , PW.PROJECT_WORK_END_DATE
+			    , PW.PROJECT_WORK_WRITE_DATE
+			    , PROJECT_PRIORITY_COLOR
+			    , PW.PROJECT_WORK_CONTENT
+			    , PW.PROJECT_WORK_STATUS_ID
+			    , PW.PROJECT_PRIORITY_ID
+			    , PW.PIC_ID
+			FROM PROJECT_WORK PW
+			    JOIN PROJECT_WORK_STATUS PWS on PW.PROJECT_WORK_STATUS_ID = PWS.PROJECT_WORK_STATUS_ID
+			    JOIN PROJECT_PRIORITY PP on PW.PROJECT_PRIORITY_ID = PP.PROJECT_PRIORITY_ID
+			    JOIN PROJECT P on PW.PROJECT_ID = P.PROJECT_ID
+			    JOIN PROJECT_ATTEND PA on P.PROJECT_ID = PA.PROJECT_ID
+			    JOIN ASSOCIATION A ON PA.COMPANY_ID = A.COMPANY_ID
+			    JOIN COMPANY C ON A.COMPANY_ID = C.COMPANY_ID
+			WHERE PW.PROJECT_WORK_REMOVE_WHETHER = 'N'
+			    AND C.COMPANY_ID = #{companyId}
+			    AND PA.PROJECT_ID = #{projectId}
+			    AND PW.PIC_ID = #{picId}
+		    <if test="search != null" >
+		    	AND PW.PROJECT_WORK_TITLE LIKE '%' || #{search} || '%'
+			</if>
+			ORDER BY PW.PROJECT_WORK_WRITE_DATE DESC ) a
+		WHERE ROWNUM <![CDATA[<]]>= #{currentPage} * #{pageSize} )
+	WHERE rnum <![CDATA[>]]> (#{currentPage} - 1) * #{pageSize}
+</select>
+
+<!-- 나의 일감 페이징을 위한 전체 데이터수 -->
+<select id="totalWorkData" resultType="int" parameterType="kr.or.ddit.vo.Page">
+	SELECT COUNT(*)
+	FROM PROJECT_WORK
+	WHERE PROJECT_ID = #{projectId} AND PROJECT_WORK_REMOVE_WHETHER = 'N' AND PIC_ID = #{picId}
+</select>
+
+<!-- todo에서 일감 상태변경 -->
+<update id="updateStatus" parameterType="int">
+	UPDATE PROJECT_WORK
+	SET 
+		PROJECT_WORK_STATUS_ID = 4
+	WHERE PROJECT_WORK_ID = #{projectWorkId}
+</update>
+
+</mapper>

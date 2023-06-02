@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.company.dao.CompanyDAO">
+
+	<select id="companyList" resultType="kr.or.ddit.company.vo.CompanyVO" >
+ SELECT C.COMPANY_ID, C.COMPANY_NAME, M.MEMBER_NAME, MG.MEMBER_GRADE , C.COMPANY_ADDR, C.COMPANY_TEL, M.MEMBER_NAME,MG.MEMBER_GRADE, C.COMPANY_CEO
+        , S.SUBSCRIBE_START_DATE, S.SUBSCRIBE_END_DATE , (S.SUBSCRIBE_END_DATE-S.SUBSCRIBE_START_DATE) AS SUB_DAY
+FROM COMPANY C
+         JOIN ASSOCIATION A ON C.COMPANY_ID = A.COMPANY_ID
+         JOIN MEMBER M ON A.MEMBER_ID = M.MEMBER_ID
+         JOIN MEMBER_GRADE MG ON M.MEMBER_GRADE_ID = MG.MEMBER_GRADE_ID
+         JOIN SUBSCRIBE S ON M.MEMBER_ID = S.MEMBER_ID
+WHERE MG.MEMBER_GRADE_ID = 2 AND S.SUBSCRIBE_USE = 'Y' 
+	
+	</select>
+
+	<select id="companyDuplicationSelect" resultType="int">
+		SELECT COUNT(*)
+		FROM ASSOCIATION
+		WHERE MEMBER_ID = #{memberId}
+	</select>
+
+	<select id="myCompanySelect" resultType="kr.or.ddit.company.vo.CompanyVO">
+		SELECT M.MEMBER_ID,MEMBER_GRADE,MEMBER_NAME,C.COMPANY_NAME,C.COMPANY_TEL,C.COMPANY_ADDR
+		FROM MEMBER M JOIN MEMBER_GRADE MG ON M.MEMBER_GRADE_ID = MG.MEMBER_GRADE_ID
+					  JOIN ASSOCIATION A2 on M.MEMBER_ID = A2.MEMBER_ID
+					  JOIN COMPANY C ON A2.COMPANY_ID = C.COMPANY_ID
+		WHERE M.MEMBER_ID =  #{memberId}
+	</select>
+
+	<insert id="companyInsert" parameterType="kr.or.ddit.company.vo.CompanyVO">
+	<selectKey order="AFTER" resultType="int" keyProperty="companyId">
+		SELECT NVL(MAX(COMPANY_ID),0)
+		FROM COMPANY
+	</selectKey>
+	INSERT INTO COMPANY(COMPANY_NAME, COMPANY_ADDR, COMPANY_TEL,COMPANY_CEO)
+	VALUES (#{companyName},#{companyAddr},#{companyTel},#{companyCeo})
+	</insert>
+
+	<update id="updatecompany" parameterType="kr.or.ddit.company.vo.CompanyVO">
+		UPDATE COMPANY
+		SET COMPANY_NAME = #{companyName},
+    	COMPANY_ADDR = #{companyAddr},
+    	COMPANY_TEL = #{companyTel}
+	WHERE COMPANY_ID = #{companyId}
+	</update>
+
+	<delete id="deletecompany" parameterType="int">
+		UPDATE COMPANY
+		SET COMPANY_REMOVE_WHETHER  = 'Y'
+		WHERE COMPANY_ID = #{companyId}
+	</delete>
+
+	<select id="companySearch" resultType="kr.or.ddit.company.vo.CompanyVO" parameterType="kr.or.ddit.company.vo.CompanyVO">
+	SELECT C.*,
+	       M.MEMBER_NAME,
+	       RS.REQUEST_STATUS,
+	       A.memberCount
+	FROM COMPANY C
+	         LEFT JOIN WAITING_LIST WL ON C.COMPANY_ID = WL.COMPANY_ID AND WL.MEMBER_ID = #{memberId}
+	         LEFT JOIN REQUEST_STATUS RS ON WL.REQUEST_STATUS_ID = RS.REQUEST_STATUS_ID
+	    LEFT JOIN MEMBER M ON WL.MEMBER_ID = M.MEMBER_ID
+	   LEFT JOIN (SELECT C.COMPANY_ID, C.COMPANY_NAME, COUNT(WL.MEMBER_ID) AS memberCount
+	              FROM COMPANY C
+	                       LEFT JOIN WAITING_LIST WL ON C.COMPANY_ID = WL.COMPANY_ID AND WL.MEMBER_ID = #{memberId}
+	              GROUP BY C.COMPANY_ID,C.COMPANY_NAME
+	) A ON A.COMPANY_ID = C.COMPANY_ID
+	<if test="search != null">
+		WHERE A.COMPANY_NAME like '%'|| #{search} ||'%'
+	</if>
+	</select>
+
+	<select id="companyMember" resultType="kr.or.ddit.company.vo.CompanyVO" parameterType="kr.or.ddit.company.vo.CompanyVO">
+		SELECT  C.COMPANY_NAME, M.MEMBER_NAME,RS.REQUEST_STATUS,M.MEMBER_ID
+		FROM WAITING_LIST WL JOIN MEMBER M on WL.MEMBER_ID = M.MEMBER_ID
+		JOIN REQUEST_STATUS RS on WL.REQUEST_STATUS_ID = RS.REQUEST_STATUS_ID
+		JOIN COMPANY C ON WL.COMPANY_ID = C.COMPANY_ID
+		WHERE C.COMPANY_ID = #{companyId}
+	</select>
+	
+	
+
+</mapper>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.company.dao.OrgchartDAO">
+
+<select id="orgchartList" parameterType="int" resultType="kr.or.ddit.company.vo.OrgchartVO">
+	SELECT *
+	FROM ORGCHART
+	WHERE COMPANY_ID = (SELECT C.COMPANY_ID
+	                    FROM MEMBER M JOIN ASSOCIATION A ON M.MEMBER_ID = A.MEMBER_ID
+	                                  JOIN COMPANY C ON A.COMPANY_ID = C.COMPANY_ID
+	                    WHERE A.MEMBER_ID = #{memberId}) AND DEPARTMENT_REMOVE_WHETHER IS NULL
+	START WITH SENIOR_DEPARTMENT_ID IS NULL
+	CONNECT BY PRIOR ORGCHART_ID = SENIOR_DEPARTMENT_ID
+</select>
+
+<insert id="insertOrgchart" parameterType="kr.or.ddit.company.vo.OrgchartVO">
+
+INSERT INTO ORGCHART(COMPANY_ID, DEPARTMENT_NAME, SENIOR_DEPARTMENT_ID)
+
+<choose>
+	<when test="seniorDepartmentId != null">
+		VALUES (#{companyId},#{departmentName},#{seniorDepartmentId})
+	</when>
+	<when test="seniorDepartmentId == null">
+		VALUES (#{companyId},#{departmentName},NULL)
+	</when>
+</choose>
+
+</insert>
+
+<update id="updateOrgchart" parameterType="kr.or.ddit.company.vo.OrgchartVO">
+	UPDATE ORGCHART
+		SET DEPARTMENT_NAME = #{departmentName}
+		<if test="seniorDepartmentId != null">
+			,SENIOR_DEPARTMENT_ID = #{seniorDepartmentId}
+		</if>
+
+	WHERE COMPANY_ID = #{companyId} AND ORGCHART_ID = #{orgchartId}
+</update>
+
+<delete id="deleteOrgchart" parameterType="kr.or.ddit.company.vo.OrgchartVO">
+UPDATE ORGCHART
+SET DEPARTMENT_REMOVE_WHETHER = 'Y'
+WHERE ORGCHART_ID IN (
+             SELECT ORGCHART_ID
+             FROM ORGCHART
+             START WITH COMPANY_ID = #{companyId} AND ORGCHART_ID = #{orgchartId}
+             CONNECT BY PRIOR ORGCHART_ID = SENIOR_DEPARTMENT_ID
+)
+</delete>
+
+
+<select id="orgchartMemberList" resultType="kr.or.ddit.company.vo.OrgchartVO" parameterType="kr.or.ddit.company.vo.OrgchartVO">
+	SELECT M.MEMBER_NAME , O.DEPARTMENT_NAME,O.ORGCHART_ID
+	FROM MEMBER M JOIN ASSOCIATION A2 on M.MEMBER_ID = A2.MEMBER_ID
+	JOIN COMPANY C ON A2.COMPANY_ID = C.COMPANY_ID
+	JOIN ORGCHART O on A2.ORGCHART_ID = O.ORGCHART_ID
+	WHERE C.COMPANY_ID = #{companyId}  AND O.ORGCHART_ID = #{orgchartId}
+</select>
+
+<select id="orgchartAddMemberList" resultType="kr.or.ddit.company.vo.OrgchartVO" parameterType="kr.or.ddit.company.vo.OrgchartVO">
+	SELECT M.MEMBER_ID, M.MEMBER_NAME, C.COMPANY_NAME,O.DEPARTMENT_NAME,O.ORGCHART_ID
+	FROM MEMBER M  JOIN  ASSOCIATION A2 ON M.MEMBER_ID = A2.MEMBER_ID
+	JOIN COMPANY C ON A2.COMPANY_ID = C.COMPANY_ID
+	LEFT JOIN ORGCHART O ON A2.ORGCHART_ID = O.ORGCHART_ID
+	WHERE C.COMPANY_ID = #{companyId}
+	ORDER BY M.MEMBER_NAME
+</select>
+
+<insert id="orgchartMemberInsert" parameterType="kr.or.ddit.company.vo.OrgchartVO">
+	UPDATE ASSOCIATION
+	    SET ORGCHART_ID = #{orgchartId}
+	WHERE MEMBER_ID = #{memberId}
+</insert>
+
+</mapper>

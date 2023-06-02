@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.project.dao.ProjectDAO">
+
+<select id="projectList" resultType="kr.or.ddit.project.vo.ProjectVO" parameterType="kr.or.ddit.projectAttend.vo.ProjectAttendVO">
+SELECT   P.PROJECT_ID
+     , P.PROJECT_NAME
+     , c.COMPANY_ID
+     , C.COMPANY_NAME
+     , (select PROJECT_STATUS_NAME from PROJECT_STATUS PS where P.PROJECT_STATUS_ID = PS.PROJECT_STATUS_ID)  AS PROJECT_STATUS_NAME
+     , (select COUNT(PROJECT_WORK_ID) FROM  PROJECT_WORK where PROJECT_ID = P.PROJECT_ID) as projectTodoCount
+     , (SELECT COUNT(PA.PROJECT_ID) FROM PROJECT_ATTEND PA WHERE P.PROJECT_ID = PA.PROJECT_ID GROUP BY PA.PROJECT_ID) AS  projectAttendMemberCount
+     , P.PROJECT_START_DATE
+     , P.PROJECT_END_DATE
+     , P.PROJECT_CONTENT
+	   ,CASE
+		    WHEN P.PROJECT_END_DATE = P.PROJECT_START_DATE THEN 0
+		    WHEN CEIL(P.PROJECT_END_DATE - SYSDATE) <![CDATA[<]]> 0 THEN 0
+		    ELSE CEIL(P.PROJECT_END_DATE - SYSDATE)
+		END AS LEFTDAYS,
+		CASE
+		    WHEN P.PROJECT_END_DATE = P.PROJECT_START_DATE THEN 0
+		    ELSE CEIL((P.PROJECT_END_DATE - P.PROJECT_START_DATE) / 30)
+		END AS LEFTMONTHS,
+		CASE
+		    WHEN P.PROJECT_END_DATE = P.PROJECT_START_DATE THEN 100
+		    WHEN TRUNC(ROUND((TRUNC(SYSDATE) - P.PROJECT_START_DATE) / (P.PROJECT_END_DATE - P.PROJECT_START_DATE) * 100, 2)) > 100 THEN 100
+		    ELSE TRUNC(ROUND((TRUNC(SYSDATE) - P.PROJECT_START_DATE) / (P.PROJECT_END_DATE - P.PROJECT_START_DATE) * 100, 2))
+		END AS progress
+FROM PROJECT P
+    LEFT JOIN COMPANY C ON C.COMPANY_ID = P.COMPANY_ID
+WHERE
+    P.PROJECT_REMOVE_WHETHER IS NULL
+  AND P.COMPANY_ID = #{companyId}
+<if test="memberGradeId==3">
+    AND P.PROJECT_ID in (
+        select project_id from PROJECT_ATTEND
+        where MEMBER_ID = #{memberId}
+    )
+</if>
+ORDER BY P.PROJECT_ID
+</select>
+
+<select id="projectMemberList" resultType="kr.or.ddit.member.vo.AssociationVO" parameterType="int">
+SELECT DISTINCT A.COMPANY_ID, A.MEMBER_ID, M.MEMBER_NAME
+FROM ASSOCIATION A
+         JOIN MEMBER M ON A.MEMBER_ID = M.MEMBER_ID
+         LEFT JOIN PROJECT_ATTEND PA ON A.MEMBER_ID = PA.MEMBER_ID AND A.COMPANY_ID = PA.COMPANY_ID
+WHERE A.COMPANY_ID = #{companyId} AND A.ORGCHART_ID IS NOT NULL
+  AND (PA.PROJECT_ROLE_ID = 3 OR PA.PROJECT_ROLE_ID IS NULL) and m.MEMBER_GRADE_ID !=2
+</select>
+
+<update id="updateProject" parameterType="kr.or.ddit.project.vo.ProjectVO">
+	UPDATE PROJECT
+SET
+      PROJECT_NAME = #{projectName}
+    , PROJECT_CONTENT = #{projectContent}
+    , PROJECT_START_DATE = #{projectStartDate}
+    , PROJECT_END_DATE= #{projectEndDate}
+    
+WHERE PROJECT_ID = #{projectId}
+
+</update>
+
+<update id="deleteProject" parameterType="int">
+UPDATE PROJECT
+SET PROJECT_REMOVE_WHETHER = 'Y'
+    WHERE PROJECT_ID = #{projectId}
+</update>
+
+
+<insert id="insertProject" parameterType="kr.or.ddit.project.vo.ProjectVO">
+<selectKey order="AFTER" keyProperty="projectId" resultType="int">
+SELECT NVL(MAX(PROJECT_ID),0)
+		FROM PROJECT
+</selectKey>
+
+INSERT INTO PROJECT (COMPANY_ID, PROJECT_NAME, PROJECT_CONTENT, PROJECT_START_DATE, PROJECT_END_DATE)
+VALUES 
+(#{companyId}, #{projectName}, #{projectContent}, #{projectStartDate}, #{projectEndDate})
+</insert>
+
+<!-- <select id="projectSelect" resultType="ProjectVO" parameterType="int"> -->
+
+<!-- </select> -->
+
+
+
+</mapper>

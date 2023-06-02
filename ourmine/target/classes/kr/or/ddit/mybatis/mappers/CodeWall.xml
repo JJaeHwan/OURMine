@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.codeWall.dao.CodeWallDAO">
+
+<select id="selectCodeWallList" resultType="kr.or.ddit.codeWall.vo.CodeWallVO" parameterType="int">
+	SELECT ROWNUM RNUM, D.*
+	  FROM(
+		SELECT A.CODEWALL_ID
+				, A.CODE_EDITOR_ID
+				, A.MEMBER_ID
+				, A.PROJECT_ID
+				, A.COMPANY_ID
+				, TO_CHAR(A.CODEWALL_WRITE_DATE , 'YYYY/MM/DD HH24:MI') AS CODEWALL_WRITE_DATE
+				, A.CODE_CONTENT
+				, A.CODE_TITLE
+	            , B.MEMBER_NAME as CODE_WALL_WRITER
+	            , C.CODE_LANGUAGE
+		  FROM CODEWALL A
+	           LEFT JOIN MEMBER B on A.MEMBER_ID = B.MEMBER_ID
+	           LEFT JOIN CODE_EDITOR C ON A.CODE_EDITOR_ID = C.CODE_EDITOR_ID 
+		 WHERE PROJECT_ID = #{projectId} 
+	  ) D
+	  ORDER BY RNUM DESC
+
+</select>
+
+<select id="selectCodeWallArticle" resultType="kr.or.ddit.codeWall.vo.CodeWallVO" parameterType="int">
+	SELECT A.CODEWALL_ID
+			, A.CODE_EDITOR_ID
+			, A.MEMBER_ID
+			, A.PROJECT_ID
+			, A.COMPANY_ID
+			, A.CODEWALL_WRITE_DATE
+			, A.CODE_CONTENT
+			, A.CODE_TITLE
+            , B.MEMBER_NAME as CODE_WALL_WRITER
+            , C.CODE_LANGUAGE
+	  FROM CODEWALL A
+           LEFT JOIN MEMBER B on A.MEMBER_ID = B.MEMBER_ID
+           LEFT JOIN CODE_EDITOR C ON A.CODE_EDITOR_ID = C.CODE_EDITOR_ID
+	 WHERE CODEWALL_ID = #{codewallId}
+</select>
+
+<insert id="insertCodeWall" parameterType="kr.or.ddit.codeWall.vo.CodeWallVO">
+	INSERT INTO CODEWALL(
+				CODEWALL_ID
+				, CODE_EDITOR_ID
+				, MEMBER_ID
+				, PROJECT_ID
+				, COMPANY_ID
+				, CODEWALL_WRITE_DATE
+				, CODE_CONTENT
+				, CODE_TITLE
+				)
+		  VALUES(
+		  	CODEWALL_SEQ.NEXTVAL
+			, #{codeEditorId , jdbcType=NUMERIC}
+			, #{memberId , jdbcType=NUMERIC}
+			, #{projectId , jdbcType=NUMERIC}
+			, #{companyId , jdbcType=NUMERIC}
+			, SYSDATE
+			, #{codeContent , jdbcType=VARCHAR}
+			, #{codeTitle , jdbcType=VARCHAR}
+			  )	
+	
+</insert>
+
+<update id="updateCodeWall" parameterType="kr.or.ddit.codeWall.vo.CodeWallVO">
+	UPDATE CODEWALL
+	   SET
+	       CODE_CONTENT = #{codeContent},
+	       CODE_TITLE = #{codeTitle}
+	 WHERE CODEWALL_ID = #{codewallId}      
+</update>
+
+</mapper>

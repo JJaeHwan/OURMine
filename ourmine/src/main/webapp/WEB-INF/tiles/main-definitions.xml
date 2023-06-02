@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" "http://tiles.apache.org/dtds/tiles-config_3_0.dtd" >
+<tiles-definitions>
+	<definition name="parent" template="/WEB-INF/jsp/template_theme.jsp">
+		<put-attribute name="title" value="OURmine_project" />
+		<put-attribute name="preScript" value="/includee/preScript.jsp" />
+		<put-attribute name="leftMenuAdmin" value="/includee/leftMenuAdmin.jsp" />
+		<put-attribute name="leftMenuManager" value="/includee/leftMenuManager.jsp" />
+		<put-attribute name="leftMenu" value="/includee/leftMenu.jsp" />
+		<put-attribute name="headerMenuAdmin" value="/includee/headerMenuAdmin.jsp" />
+		<put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+		<put-attribute name="bodynav" value="/includee/bodynavnone.jsp" />
+		<put-attribute name="postScript" value="/includee/postScript.jsp" />
+	</definition>
+
+	<definition name="index" extends="parent" >
+		<put-attribute name="body" value="/WEB-INF/jsp/index.jsp" />
+	</definition>
+	
+	<definition name="index/*" extends="parent" >
+		<put-attribute name="body" value="/WEB-INF/jsp/index/{1}.jsp" />
+	</definition>
+
+	<definition name="projectParent" extends="parent" >
+		<put-attribute name="bodynav" value="/includee/bodynav.jsp" />
+	</definition>
+
+    <definition name="project/*/*" extends="projectParent">
+  		<put-attribute name="body" value="/WEB-INF/jsp/project/{1}/{2}.jsp" />
+    </definition>
+
+    <definition name="member/*" extends="parent">
+  		<put-attribute name="body" value="/WEB-INF/jsp/member/{1}.jsp" />
+    </definition>
+
+    <definition name="noticeboard/*" extends="parent">
+  		<put-attribute name="body" value="/WEB-INF/jsp/noticeboard/{1}.jsp" />
+    </definition>
+
+    <definition name="file/*" extends="parent">
+  		<put-attribute name="body" value="/WEB-INF/jsp/file/{1}.jsp" />
+    </definition>
+
+    <definition name="memo" extends="parent">
+  		<put-attribute name="body" value="/WEB-INF/jsp/memo.jsp" />
+    </definition>
+
+<!-- 	<definition name="project/*" extends="projectParent"> -->
+<!--   		<put-attribute name="body" value="/WEB-INF/jsp/project/projectHome.jsp" /> -->
+<!--     </definition> -->
+
+	<definition name="codeeditor/*" extends="projectParent">
+  		<put-attribute name="body" value="/WEB-INF/jsp/codeeditor/{1}.jsp" />
+    </definition>
+
+	<definition name="codewall/*" extends="projectParent">
+  		<put-attribute name="body" value="/WEB-INF/jsp/codewall/{1}.jsp" />
+    </definition>
+
+	<definition name="admin/*" extends="parent" >
+		<put-attribute name="body" value="/WEB-INF/jsp/admin/{1}.jsp" />
+	</definition>
+
+	<definition name="manager/*" extends="parent" >
+		<put-attribute name="body" value="/WEB-INF/jsp/manager/{1}.jsp" />
+	</definition>
+
+	<definition name="company/*" extends="parent" >
+		<put-attribute name="body" value="/WEB-INF/jsp/company/{1}.jsp" />
+	</definition>
+
+	<definition name="orgchart/*" extends="parent" >
+		<put-attribute name="body" value="/WEB-INF/jsp/orgchart/{1}.jsp" />
+	</definition>
+
+	<definition name="chat/*" extends="parent" >
+		<put-attribute name="body" value="/WEB-INF/jsp/chat/{1}.jsp" />
+	</definition>
+
+	<definition name="alarm/*" extends="parent" >
+		<put-attribute name="body" value="/WEB-INF/jsp/alarm/{1}.jsp" />
+	</definition>
+
+</tiles-definitions>

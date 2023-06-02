@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.board.dao.BoardReplyDAO">
+
+	<select id="boardReplyList" resultType="kr.or.ddit.board.vo.BoardReplyVO" parameterType="int">
+		SELECT
+		    reply_id,
+		    reply_writer,
+		    reply_writer_id,
+		    reply_content,
+		    reply_write_date,
+		    board_id
+		FROM
+		    board_reply
+		WHERE
+			board_id = #{boardId}
+	</select>
+	<insert id="insertBoardReply" parameterType="kr.or.ddit.board.vo.BoardReplyVO">
+		INSERT INTO board_reply (
+		    board_id,
+		    reply_writer,
+		    reply_writer_Id,
+		    reply_content
+		) VALUES (
+		    #{boardId},
+		    #{replyWriter},
+		    #{replyWriterId},
+		    #{replyContent}
+		)
+	</insert>
+	<update id="updateBoardReply" parameterType="kr.or.ddit.board.vo.BoardReplyVO">
+		UPDATE board_reply
+		    SET
+		        reply_content = #{replyContent},
+		        reply_modify_date = sysdate
+		        
+		WHERE
+		    reply_id =#{replyId}
+	</update>
+	<delete id="deleteBoardReply" parameterType="int">
+		DELETE FROM board_reply
+		WHERE
+		    reply_id = #{replyId}
+	</delete>
+	
+</mapper>
+
+

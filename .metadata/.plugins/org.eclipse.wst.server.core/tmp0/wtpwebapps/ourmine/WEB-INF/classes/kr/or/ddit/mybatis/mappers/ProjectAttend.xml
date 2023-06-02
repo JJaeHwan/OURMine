@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.projectAttend.dao.ProjectAttendDAO">
+
+<select id="countProjectAttend" resultType="int" parameterType="kr.or.ddit.projectAttend.vo.ProjectAttendVO">
+SELECT COUNT(*)
+FROM PROJECT_ATTEND
+WHERE COMPANY_ID = #{companyId}
+  AND PROJECT_ID =#{projectId}
+  AND MEMBER_ID =#{memberId}
+  AND PROJECT_ROLE_ID =#{projectRoleId}
+</select>
+
+<delete id="deleteProjectAttend" parameterType="int">
+
+DELETE PROJECT_ATTEND
+WHERE
+    PROJECT_ATTEND_AK = #{projectAttendAk}
+</delete>
+
+
+
+<insert id="insertProjectAttend" parameterType="kr.or.ddit.projectAttend.vo.ProjectAttendVO">
+INSERT INTO PROJECT_ATTEND 
+(COMPANY_ID, PROJECT_ID, MEMBER_ID, PROJECT_ROLE_ID)
+ VALUES (#{companyId}, #{projectId}, #{memberId}, 3)
+</insert>
+
+<insert id="insertProjectAttendPL" parameterType="java.util.List">
+ 
+  INSERT ALL
+    <foreach collection="list" item="item">
+        INTO PROJECT_ATTEND (COMPANY_ID, PROJECT_ID, MEMBER_ID, PROJECT_ROLE_ID)
+        VALUES (#{item.companyId}, #{item.projectId}, #{item.memberId}, #{item.projectRoleId})
+    </foreach>
+ SELECT * FROM dual
+</insert>
+
+<select id="issuePmSelect" resultType="kr.or.ddit.member.vo.AssociationVO" parameterType="int">
+SELECT PA.MEMBER_ID, M.MEMBER_NAME
+FROM PROJECT_ATTEND PA
+JOIN ASSOCIATION A ON PA.MEMBER_ID = A.MEMBER_ID and PA.COMPANY_ID = A.COMPANY_ID
+JOIN MEMBER M on A.MEMBER_ID = M.MEMBER_ID
+WHERE PROJECT_ID = #{projectId} AND PROJECT_ROLE_ID = 1
+</select>
+
+<select id="projectRoleIdSelect" resultType="int" parameterType="kr.or.ddit.projectAttend.vo.ProjectAttendVO">
+SELECT PROJECT_ROLE_ID
+FROM PROJECT_ATTEND
+WHERE PROJECT_ID = #{projectId} AND MEMBER_ID = #{memberId}
+</select>
+
+</mapper>
+
+
+
+
+
+
+
+
+

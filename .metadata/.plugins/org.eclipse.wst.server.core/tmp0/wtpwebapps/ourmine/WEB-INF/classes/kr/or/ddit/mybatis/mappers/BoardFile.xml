@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.board.dao.BoardFileDAO">
+
+	<select id="boardFileList">
+
+	</select>
+
+	<insert id="insertBoardFile" parameterType="kr.or.ddit.board.vo.BoardFileVO">
+		INSERT INTO BOARD_FILE(BOARD_ID , ORIGINAL_FILE_NAME, SAVE_FILE_NAME,FILE_ROUTE, FILE_EXTENSION)
+		VALUES(#{boardId},#{originalFileName},#{saveFileName},#{fileRoute},#{fileExtension})
+	</insert>
+
+</mapper>

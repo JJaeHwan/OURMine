@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:task = "http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd"
+		>
+
+	<mvc:annotation-driven validator="validator"></mvc:annotation-driven>
+
+
+	<bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource"
+		p:basenames="kr.or.ddit.msg.Messages, kr.or.ddit.msg.ErrorMessages_ko.properties"
+	/>
+
+	<bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean"
+		p:validationMessageSource-ref="messageSource"
+	/>
+
+	<bean id="BNVR" class="org.springframework.web.servlet.view.BeanNameViewResolver"
+		p:order="1"
+	/>
+	<bean id="jsonView" class="org.springframework.web.servlet.view.json.MappingJackson2JsonView" />
+
+	<bean class="org.springframework.web.servlet.view.tiles3.TilesConfigurer"
+		p:definitions="/WEB-INF/tiles/*-definitions.xml"
+	/>
+	<bean id="TVR" class="org.springframework.web.servlet.view.tiles3.TilesViewResolver"
+		p:order="2"
+	/>
+	<bean id="IRVR" class="org.springframework.web.servlet.view.InternalResourceViewResolver"
+		p:prefix="/WEB-INF/jsp/"
+		p:suffix=".jsp"
+	/>
+
+	<mvc:resources location="/resources/" mapping="/resources/**" cache-period="0" />
+
+	<bean id="localeResolver" class="org.springframework.web.servlet.i18n.CookieLocaleResolver"
+		p:cookiePath="/"
+		p:cookieName="langCookie"
+		p:cookieMaxAge="#{60*60*24*7}"
+	/>
+
+	<mvc:resources mapping="/uploads/**" location="/uploads/" />
+	<mvc:interceptors >
+		<mvc:interceptor>
+			<mvc:mapping path="/**"/>
+			<mvc:exclude-mapping path="/resources/**"/>
+			<bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor"
+				p:paramName="lang"
+			/> <!-- 전체 맵핑 -->
+		</mvc:interceptor>
+		<bean class="org.springframework.web.servlet.mvc.WebContentInterceptor" p:cacheSeconds="0">
+
+		</bean>
+
+<!-- 		<mvc:interceptor> -->
+<!-- 			<mvc:mapping path="/project/**"/> -->
+<!-- 			<bean class="kr.or.ddit.commons.interceptor.ProjectPrePostCheckInterceptor"/> -->
+<!-- 		</mvc:interceptor> -->
+	</mvc:interceptors>
+
+	<context:component-scan base-package="kr.or.ddit" use-default-filters="false">
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+		<context:include-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice"/>
+	</context:component-scan>
+
+	<mvc:view-controller path="/login" view-name="login"/>
+
+	<!-- 스케줄러 -->
+	<context:component-scan base-package="kr.or.ddit.subscribe.scheduler.UpdateSubscribeMemberScheduler"/>
+	<task:scheduler id="jobScheduler" pool-size="10"/>
+	<task:annotation-driven scheduler="jobScheduler"/>
+
+</beans>

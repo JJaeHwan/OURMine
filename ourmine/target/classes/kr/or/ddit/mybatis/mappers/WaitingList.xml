@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.company.dao.WaitingListDAO">
+
+
+<insert id="waitingListInsert" parameterType="kr.or.ddit.company.vo.CompanyVO">
+	INSERT INTO WAITING_LIST(MEMBER_ID, COMPANY_ID,REQUEST_STATUS_ID)
+	VALUES (#{memberId},#{companyId},1)
+</insert>
+
+<update id="updateMemberStatus" parameterType="kr.or.ddit.company.vo.CompanyVO">
+UPDATE WAITING_LIST
+SET REQUEST_STATUS_ID = 2
+WHERE MEMBER_ID = #{memberId} AND COMPANY_ID = #{companyId}
+</update>
+
+<update id="updateMemberRefuse" parameterType="kr.or.ddit.company.vo.CompanyVO">
+UPDATE WAITING_LIST
+SET REQUEST_STATUS_ID = 3
+WHERE MEMBER_ID = #{memberId} AND COMPANY_ID = #{companyId}
+</update>
+
+<delete id="waitingListDelete" parameterType="kr.or.ddit.company.vo.CompanyVO">
+	DELETE FROM WAITING_LIST
+	WHERE COMPANY_ID = #{companyId} AND MEMBER_ID = #{memberId}
+</delete>
+
+</mapper>
